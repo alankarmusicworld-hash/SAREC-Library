@@ -183,7 +183,6 @@ export function RegisterForm() {
                   <SelectItem value="Information Technology">Information Technology</SelectItem>
                   <SelectItem value="Electronics Engineering">Electronics Engineering</SelectItem>
                   <SelectItem value="Electrical Engineering">Electrical Engineering</SelectItem>
-                  <SelectItem value="Mechanical">Mechanical</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -201,7 +200,7 @@ export function RegisterForm() {
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select year" />
-                    </SelectTrigger>
+                    </Trigger>
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="1">1st Year</SelectItem>
