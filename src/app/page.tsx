@@ -2,17 +2,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Library } from 'lucide-react';
 import {
-  Card,
-  CardContent,
-} from '@/components/ui/card';
-import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { LoginForm } from '@/components/auth/login-form';
-import { RegisterForm } from '@/components/auth/register-form';
 
 export default function LoginPage() {
   return (
@@ -24,27 +19,15 @@ export default function LoginPage() {
         </Link>
       </header>
       <main className="flex flex-1 items-center justify-center p-4">
-        <div className="w-full max-w-6xl grid md:grid-cols-2 gap-10 items-center">
-            {/* Illustration */}
-            <div className="hidden md:flex justify-center">
-                <div className="relative">
-                    <Image 
-                        src="https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=1200&auto=format&fit=crop"
-                        alt="Library Illustration"
-                        width={520}
-                        height={360}
-                        className="rounded-3xl shadow-glass ring-1 ring-white/50 dark:ring-white/10 bg-white/60 dark:bg-neutral-800/40 backdrop-blur-xl object-cover"
-                    />
-                    <div className="absolute -bottom-8 left-10 right-10 p-5 rounded-2xl bg-white/70 dark:bg-neutral-800/70 backdrop-blur-xl shadow-glass border border-white/40 dark:border-white/10">
-                        <p className="text-sm text-neutral-700 dark:text-neutral-300">Welcome to <span className="font-semibold">SAREC Library</span> — a clean and modern way to manage your library with style.</p>
-                    </div>
-                </div>
-            </div>
-            
-            {/* Form Card */}
-            <Tabs defaultValue="student" className="w-full max-w-md">
+        <div className="w-full max-w-md">
+            <Tabs defaultValue="student">
                 <div className="p-8 rounded-3xl bg-white/70 dark:bg-neutral-800/60 backdrop-blur-xl shadow-glass border border-white/40 dark:border-white/10">
-                    <h1 className="font-display text-3xl font-semibold mb-6">Sign in to <span className="text-primary">SAREC Library</span></h1>
+                    <div className="flex flex-col items-center justify-center mb-6">
+                        <div className="p-3 rounded-2xl bg-white/80 dark:bg-neutral-900/80 shadow-soft mb-4">
+                             <Library className="h-8 w-8 text-primary" />
+                        </div>
+                        <h1 className="font-display text-3xl font-semibold">Sign in to <span className="text-primary">SAREC Library</span></h1>
+                    </div>
                     <TabsList className="grid w-full grid-cols-3 mb-6">
                         <TabsTrigger value="admin">Admin</TabsTrigger>
                         <TabsTrigger value="librarian">Librarian</TabsTrigger>
