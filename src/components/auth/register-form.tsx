@@ -138,10 +138,10 @@ export function RegisterForm() {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="computer-science">Computer Science</SelectItem>
+                  <SelectItem value="computer-science-engineering">Computer Science Engineering</SelectItem>
                   <SelectItem value="information-technology">Information Technology</SelectItem>
-                  <SelectItem value="electronics">Electronics</SelectItem>
-                  <SelectItem value="electrical">Electrical</SelectItem>
+                  <SelectItem value="electronics-engineering">Electronics Engineering</SelectItem>
+                  <SelectItem value="electrical-engineering">Electrical Engineering</SelectItem>
                   <SelectItem value="mechanical">Mechanical</SelectItem>
                 </SelectContent>
               </Select>
