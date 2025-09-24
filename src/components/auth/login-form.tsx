@@ -18,8 +18,9 @@ import {
 import { Input } from '../ui/input';
 import { Checkbox } from '../ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db, auth } from '@/lib/firebase';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 const formSchema = z.object({
   id: z.string().min(1, { message: 'Please enter a valid ID.' }),
@@ -53,55 +54,53 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      const usersRef = collection(db, 'users');
-      // In a real app, the ID for students might be different from email.
-      // Here we assume all users login with email for simplicity.
-      const q = query(
-        usersRef,
-        where('email', '==', data.id.toLowerCase()),
-        where('role', '==', data.role)
-      );
-      
-      const querySnapshot = await getDocs(q);
+      // Step 1: Sign in with Firebase Auth
+      const userCredential = await signInWithEmailAndPassword(auth, data.id, data.password);
+      const user = userCredential.user;
 
-      if (querySnapshot.empty) {
+      // Step 2: Get user's profile from Firestore to check their role
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+        throw new Error("User data not found in Firestore.");
+      }
+      
+      const userData = userDoc.data();
+
+      // Step 3: Check if the user's role matches the login form's role
+      if (userData.role !== data.role) {
+        // Log out the user if role doesn't match
+        await auth.signOut();
         toast({
           variant: 'destructive',
           title: 'Login Failed',
-          description: 'Invalid credentials for the selected role.',
+          description: 'You do not have permission to log in from this page.',
         });
         setIsLoading(false);
         return;
       }
       
-      const userDoc = querySnapshot.docs[0];
-      const user = userDoc.data();
-
-      // IMPORTANT: This is an insecure password check for demonstration only.
-      // In a real application, you must use a secure authentication system
-      // like Firebase Authentication and never store plain text passwords.
-      if (user.password === data.password) {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('userRole', user.role);
-          localStorage.setItem('userEmail', user.email);
-          localStorage.setItem('userName', user.name);
-          localStorage.setItem('userId', userDoc.id);
-        }
-        toast({ title: 'Login Successful!', description: 'Redirecting to dashboard...' });
-        router.push('/dashboard');
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Login Failed',
-          description: 'Invalid credentials for the selected role.',
-        });
+      // Step 4: Role matches, proceed with login
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userRole', userData.role);
+        localStorage.setItem('userEmail', userData.email);
+        localStorage.setItem('userName', userData.name);
+        localStorage.setItem('userId', user.uid);
       }
-    } catch (error) {
+      toast({ title: 'Login Successful!', description: 'Redirecting to dashboard...' });
+      router.push('/dashboard');
+
+    } catch (error: any) {
       console.error("Login Error: ", error);
+      let description = 'An error occurred while trying to log in.';
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        description = 'Invalid credentials. Please check your email and password.';
+      }
       toast({
         variant: 'destructive',
         title: 'Login Error',
-        description: 'An error occurred while trying to log in.',
+        description: description,
       });
     } finally {
       setIsLoading(false);
