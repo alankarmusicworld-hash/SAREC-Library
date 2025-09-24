@@ -53,9 +53,25 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true);
+    let emailToLogin = data.id;
+
     try {
-      // Step 1: Sign in with Firebase Auth
-      const userCredential = await signInWithEmailAndPassword(auth, data.id, data.password);
+      // If the user is a student, we need to find their email from their enrollment number (ID)
+      if (data.role === 'student') {
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("enrollmentNumber", "==", data.id));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+          throw new Error("Student ID not found.");
+        }
+        
+        const studentData = querySnapshot.docs[0].data();
+        emailToLogin = studentData.email;
+      }
+
+      // Step 1: Sign in with Firebase Auth using the email
+      const userCredential = await signInWithEmailAndPassword(auth, emailToLogin, data.password);
       const user = userCredential.user;
 
       // Step 2: Get user's profile from Firestore to check their role
@@ -70,7 +86,6 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
 
       // Step 3: Check if the user's role matches the login form's role
       if (userData.role !== data.role) {
-        // Log out the user if role doesn't match
         await auth.signOut();
         toast({
           variant: 'destructive',
@@ -94,9 +109,13 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
     } catch (error: any) {
       console.error("Login Error: ", error);
       let description = 'An error occurred while trying to log in.';
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        description = 'Invalid credentials. Please check your email and password.';
+      
+      if (error.message === 'Student ID not found.') {
+          description = 'Invalid Student ID. Please check and try again.';
+      } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        description = 'Invalid credentials. Please check your ID and password.';
       }
+
       toast({
         variant: 'destructive',
         title: 'Login Error',
