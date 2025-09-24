@@ -95,12 +95,12 @@ export function RegisterForm() {
       await addDoc(collection(db, 'users'), {
         name: `${data.firstName} ${data.lastName}`,
         email: data.email,
-        role: 'student',
         enrollmentNumber: data.enrollmentNumber,
         department: data.department,
         year: data.year,
         semester: data.semester,
         password: data.password, 
+        role: 'student',
       });
 
       toast({
