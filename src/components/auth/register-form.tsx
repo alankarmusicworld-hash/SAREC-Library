@@ -25,8 +25,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
+import { db, auth } from '@/lib/firebase';
+import { collection, query, where, getDocs, setDoc, doc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 const formSchema = z
   .object({
@@ -76,7 +77,7 @@ export function RegisterForm() {
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      // Check if user already exists
+      // Step 1: Check if user already exists in Firestore (optional, as Auth handles it)
       const usersRef = collection(db, 'users');
       const q = query(usersRef, where('email', '==', data.email));
       const querySnapshot = await getDocs(q);
@@ -91,30 +92,57 @@ export function RegisterForm() {
         return;
       }
       
-      // Add a new document with a generated id.
-      await addDoc(collection(db, 'users'), {
+      // Step 2: Create Firebase Auth user first
+      const userCredential = await createUserWithEmailAndPassword(
+        auth, 
+        data.email, 
+        data.password
+      );
+      
+      const user = userCredential.user;
+      
+      // Step 3: Create corresponding Firestore document with AUTH UID
+      await setDoc(doc(db, 'users', user.uid), {
         name: `${data.firstName} ${data.lastName}`,
         email: data.email,
+        role: 'student',
         enrollmentNumber: data.enrollmentNumber,
         department: data.department,
         year: data.year,
         semester: data.semester,
-        password: data.password, 
-        role: 'student',
+        // Do not store password in Firestore!
       });
 
       toast({
         title: 'Registration Successful!',
         description: 'Your account has been created. Redirecting to login...',
       });
+      
       setTimeout(() => router.push('/'), 2000);
-    } catch (error) {
-      console.error('Error adding document: ', error);
-      toast({
-        variant: 'destructive',
-        title: 'Registration Error',
-        description: 'Something went wrong. Please try again.',
-      });
+      
+    } catch (error: any) {
+      console.error('Registration error: ', error);
+      
+      // Handle specific Firebase Auth errors
+      if (error.code === 'auth/email-already-in-use') {
+        toast({
+          variant: 'destructive',
+          title: 'Registration Failed',
+          description: 'An account with this email already exists.',
+        });
+      } else if (error.code === 'auth/weak-password') {
+        toast({
+          variant: 'destructive',
+          title: 'Registration Failed',
+          description: 'Password should be at least 6 characters.',
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Registration Error',
+          description: 'Something went wrong. Please try again.',
+        });
+      }
     } finally {
       setIsLoading(false);
     }
