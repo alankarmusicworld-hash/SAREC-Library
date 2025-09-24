@@ -100,8 +100,6 @@ export function RegisterForm() {
         department: data.department,
         year: data.year,
         semester: data.semester,
-        // In a real app, you should hash the password before saving it.
-        // This is not secure for production.
         password: data.password, 
       });
 
