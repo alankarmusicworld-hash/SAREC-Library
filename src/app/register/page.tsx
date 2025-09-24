@@ -20,7 +20,7 @@ export default function RegisterPage() {
         </Link>
       </header>
       <main className="flex flex-1 items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-2xl">
           <CardHeader>
             <CardTitle>Create an account</CardTitle>
             <CardDescription>
