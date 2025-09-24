@@ -1,10 +1,20 @@
 import type { Metadata } from 'next';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
-import { Inter } from 'next/font/google';
+import { Inter, Poppins } from 'next/font/google';
 import { cn } from '@/lib/utils';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
+const inter = Inter({ 
+  subsets: ['latin'], 
+  variable: '--font-sans' 
+});
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-display',
+});
+
 
 export const metadata: Metadata = {
   title: 'SAREC Library Portal',
@@ -21,7 +31,8 @@ export default function RootLayout({
       <body
         className={cn(
           'min-h-screen bg-background font-sans antialiased',
-          inter.variable
+          inter.variable,
+          poppins.variable
         )}
       >
         {children}

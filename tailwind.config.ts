@@ -20,6 +20,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['var(--font-sans)', ...fontFamily.sans],
+        display: ['var(--font-display)', 'var(--font-sans)', ...fontFamily.sans]
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -55,28 +56,21 @@ export default {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
-        chart: {
-          '1': 'hsl(var(--chart-1))',
-          '2': 'hsl(var(--chart-2))',
-          '3': 'hsl(var(--chart-3))',
-          '4': 'hsl(var(--chart-4))',
-          '5': 'hsl(var(--chart-5))',
-        },
-        sidebar: {
-          DEFAULT: 'hsl(var(--sidebar-background))',
-          foreground: 'hsl(var(--sidebar-foreground))',
-          primary: 'hsl(var(--sidebar-primary))',
-          'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-          accent: 'hsl(var(--sidebar-accent))',
-          'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-          border: 'hsl(var(--sidebar-border))',
-          ring: 'hsl(var(--sidebar-ring))',
-        },
       },
       borderRadius: {
+        '3xl': '1.5rem',
+        '2xl': '1rem',
+        xl: '0.75rem',
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+      },
+      boxShadow: {
+        soft: '0 10px 30px rgba(2, 6, 23, 0.06)',
+        glass: '0 8px 32px rgba(31, 38, 135, 0.15)'
+      },
+      backdropBlur: {
+        xs: '2px'
       },
       keyframes: {
         'accordion-down': {
