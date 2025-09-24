@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -26,6 +25,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 
 const formSchema = z
   .object({
@@ -49,6 +50,7 @@ export function RegisterForm() {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -71,14 +73,53 @@ export function RegisterForm() {
     '4': ['7', '8'],
   };
 
-  function onSubmit(data: z.infer<typeof formSchema>) {
-    // In a real app, you would handle registration logic here.
-    console.log(data);
-    toast({
-      title: 'Registration Successful!',
-      description: 'You are being redirected to the login page.',
-    });
-    setTimeout(() => router.push('/'), 2000);
+  async function onSubmit(data: z.infer<typeof formSchema>) {
+    setIsLoading(true);
+    try {
+      // Check if user already exists
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('email', '==', data.email));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        toast({
+          variant: 'destructive',
+          title: 'Registration Failed',
+          description: 'An account with this email already exists.',
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Add a new document with a generated id.
+      await addDoc(collection(db, 'users'), {
+        name: `${data.firstName} ${data.lastName}`,
+        email: data.email,
+        role: 'student',
+        enrollmentNumber: data.enrollmentNumber,
+        department: data.department,
+        year: data.year,
+        semester: data.semester,
+        // In a real app, you should hash the password before saving it.
+        // This is not secure for production.
+        password: data.password, 
+      });
+
+      toast({
+        title: 'Registration Successful!',
+        description: 'Your account has been created. Redirecting to login...',
+      });
+      setTimeout(() => router.push('/'), 2000);
+    } catch (error) {
+      console.error('Error adding document: ', error);
+      toast({
+        variant: 'destructive',
+        title: 'Registration Error',
+        description: 'Something went wrong. Please try again.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -92,7 +133,7 @@ export function RegisterForm() {
               <FormItem>
                 <FormLabel>First Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="Max" {...field} />
+                  <Input placeholder="Max" {...field} disabled={isLoading} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -105,7 +146,7 @@ export function RegisterForm() {
               <FormItem>
                 <FormLabel>Last Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="Robinson" {...field} />
+                  <Input placeholder="Robinson" {...field} disabled={isLoading} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -119,7 +160,7 @@ export function RegisterForm() {
             <FormItem>
               <FormLabel>Enrollment/Roll Number</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., 2100101" {...field} />
+                <Input placeholder="e.g., 2100101" {...field} disabled={isLoading} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -131,18 +172,18 @@ export function RegisterForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Department</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a department" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="computer-science-engineering">Computer Science Engineering</SelectItem>
-                  <SelectItem value="information-technology">Information Technology</SelectItem>
-                  <SelectItem value="electronics-engineering">Electronics Engineering</SelectItem>
-                  <SelectItem value="electrical-engineering">Electrical Engineering</SelectItem>
-                  <SelectItem value="mechanical">Mechanical</SelectItem>
+                  <SelectItem value="Computer Science Engineering">Computer Science Engineering</SelectItem>
+                  <SelectItem value="Information Technology">Information Technology</SelectItem>
+                  <SelectItem value="Electronics Engineering">Electronics Engineering</SelectItem>
+                  <SelectItem value="Electrical Engineering">Electrical Engineering</SelectItem>
+                  <SelectItem value="Mechanical">Mechanical</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -156,7 +197,7 @@ export function RegisterForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Year</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select year" />
@@ -182,12 +223,12 @@ export function RegisterForm() {
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
-                  disabled={!selectedYear}
+                  disabled={!selectedYear || isLoading}
                 >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select semester" />
-                    </SelectTrigger>
+                    </Trigger>
                   </FormControl>
                   <SelectContent>
                     {selectedYear && semesters[selectedYear] ? (
@@ -215,7 +256,7 @@ export function RegisterForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="user@example.com" {...field} />
+                <Input placeholder="user@example.com" {...field} disabled={isLoading} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -233,6 +274,7 @@ export function RegisterForm() {
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     {...field}
+                    disabled={isLoading}
                   />
                   <Button
                     type="button"
@@ -240,6 +282,7 @@ export function RegisterForm() {
                     size="icon"
                     className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-xl shadow-none"
                     onClick={() => setShowPassword(!showPassword)}
+                    disabled={isLoading}
                   >
                     {showPassword ? <EyeOff /> : <Eye />}
                   </Button>
@@ -261,6 +304,7 @@ export function RegisterForm() {
                     type={showConfirmPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     {...field}
+                    disabled={isLoading}
                   />
                   <Button
                     type="button"
@@ -268,6 +312,7 @@ export function RegisterForm() {
                     size="icon"
                     className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-xl shadow-none"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    disabled={isLoading}
                   >
                     {showConfirmPassword ? <EyeOff /> : <Eye />}
                   </Button>
@@ -277,8 +322,8 @@ export function RegisterForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full">
-          Create an account
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? 'Creating Account...' : 'Create an account'}
         </Button>
       </form>
     </Form>

@@ -20,21 +20,31 @@ export function UserNav() {
   const router = useRouter();
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setUserRole(localStorage.getItem('userRole'));
-      // In a real app, you'd get the user's email from your auth state
-      setUserEmail('user@example.com');
+      setUserEmail(localStorage.getItem('userEmail'));
+      setUserName(localStorage.getItem('userName'));
     }
   }, []);
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('userRole');
+      localStorage.removeItem('userEmail');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('userId');
     }
     router.push('/');
   };
+  
+  const getInitials = (name: string | null) => {
+    if (!name) return '';
+    return name.split(' ').map(n => n[0]).join('');
+  }
+
 
   return (
     <DropdownMenu>
@@ -43,7 +53,7 @@ export function UserNav() {
           <Avatar className="h-9 w-9">
             <AvatarImage src={`https://avatar.vercel.sh/${userEmail}.png`} alt="User avatar" />
             <AvatarFallback>
-              <UserIcon />
+              {userName ? getInitials(userName) : <UserIcon />}
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -52,7 +62,7 @@ export function UserNav() {
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">
-              {userRole ? `${userRole.charAt(0).toUpperCase() + userRole.slice(1)}` : 'Guest'}
+              {userName || (userRole ? `${userRole.charAt(0).toUpperCase() + userRole.slice(1)}` : 'Guest')}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
               {userEmail}
