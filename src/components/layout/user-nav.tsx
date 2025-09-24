@@ -14,15 +14,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { User } from 'lucide-react';
+import { CreditCard, LogOut, Settings, User as UserIcon } from 'lucide-react';
 
 export function UserNav() {
   const router = useRouter();
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setUserRole(localStorage.getItem('userRole'));
+      // In a real app, you'd get the user's email from your auth state
+      setUserEmail('user@example.com');
     }
   }, []);
 
@@ -38,9 +41,9 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src="/avatars/01.png" alt="@shadcn" />
+            <AvatarImage src={`https://avatar.vercel.sh/${userEmail}.png`} alt="User avatar" />
             <AvatarFallback>
-              <User />
+              <UserIcon />
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -49,21 +52,32 @@ export function UserNav() {
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">
-              SAREC User
+              {userRole ? `${userRole.charAt(0).toUpperCase() + userRole.slice(1)}` : 'Guest'}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
-              {userRole ? `${userRole.charAt(0).toUpperCase() + userRole.slice(1)}` : 'Guest'}
+              {userEmail}
             </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem disabled>Profile</DropdownMenuItem>
-          <DropdownMenuItem disabled>Settings</DropdownMenuItem>
+          <DropdownMenuItem disabled>
+            <UserIcon className="mr-2 h-4 w-4" />
+            <span>Profile</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled>
+            <CreditCard className="mr-2 h-4 w-4" />
+            <span>Billing</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
+          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
-          Log out
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Log out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

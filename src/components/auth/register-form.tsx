@@ -17,12 +17,22 @@ import {
 } from '@/components/ui/form';
 import { Input } from '../ui/input';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
-const formSchema = z.object({
-  name: z.string().min(2, { message: 'Name must be at least 2 characters.'}),
-  email: z.string().email({ message: 'Please enter a valid email.' }),
-  password: z.string().min(6, { message: 'Password must be at least 6 characters.'}),
-});
+const formSchema = z
+  .object({
+    firstName: z.string().min(1, { message: 'First name is required' }),
+    lastName: z.string().min(1, { message: 'Last name is required' }),
+    email: z.string().email({ message: 'Please enter a valid email.' }),
+    password: z
+      .string()
+      .min(6, { message: 'Password must be at least 6 characters.' }),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
 
 export function RegisterForm() {
   const router = useRouter();
@@ -30,9 +40,11 @@ export function RegisterForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
+      firstName: '',
+      lastName: '',
       email: '',
       password: '',
+      confirmPassword: '',
     },
   });
 
@@ -40,28 +52,43 @@ export function RegisterForm() {
     // In a real app, you would handle registration logic here.
     console.log(data);
     toast({
-        title: "Registration Successful!",
-        description: "Aapko login page par redirect kiya ja raha hai.",
-    })
-    setTimeout(() => router.push('/login/student'), 2000);
+      title: 'Registration Successful!',
+      description: 'You are being redirected to the login page.',
+    });
+    setTimeout(() => router.push('/'), 2000);
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Full Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Aapka pura naam" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="firstName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>First Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Max" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="lastName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Last Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Robinson" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <FormField
           control={form.control}
           name="email"
@@ -82,14 +109,27 @@ export function RegisterForm() {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="******" {...field} />
+                <Input type="password" placeholder="••••••••" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="confirmPassword"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Confirm Password</FormLabel>
+              <FormControl>
+                <Input type="password" placeholder="••••••••" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
         <Button type="submit" className="w-full">
-          Register
+          Create an account
         </Button>
       </form>
     </Form>
