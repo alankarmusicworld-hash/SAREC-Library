@@ -12,7 +12,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen w-full bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('/background.jpg')"}}>
        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-white/20 bg-black/10 px-4 backdrop-blur-md sm:px-6">
-         <Link href="/" className="flex items-center gap-2 font-semibold text-white">
+         <Link href="/" className="flex items-center gap-2 font-semibold text-foreground">
           <Library className="h-6 w-6" />
           <span>SAREC LIBRARY</span>
         </Link>
