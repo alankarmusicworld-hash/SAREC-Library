@@ -17,11 +17,13 @@ import {
 } from '@/components/ui/form';
 import { Input } from '../ui/input';
 import { Checkbox } from '../ui/checkbox';
+import { users } from '@/lib/data';
+import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
   id: z.string().min(1, { message: 'Please enter a valid ID.' }),
   password: z.string().min(1, { message: 'Password is required.' }),
-  role: z.enum(['admin', 'librarian', 'student']).optional(),
+  role: z.enum(['admin', 'librarian', 'student']),
 });
 
 interface LoginFormProps {
@@ -32,6 +34,7 @@ interface LoginFormProps {
 
 export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@example.com'}: LoginFormProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -46,10 +49,22 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
   }, [role, form]);
 
   function onSubmit(data: z.infer<typeof formSchema>) {
-    if (typeof window !== 'undefined' && data.role) {
-      localStorage.setItem('userRole', data.role);
+    // Dummy validation
+    const user = users.find(u => u.email.toLowerCase() === data.id.toLowerCase() && u.role === data.role);
+    
+    if (user) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userRole', user.role);
+      }
+      toast({ title: 'Login Successful!', description: 'Redirecting to dashboard...' });
+      router.push('/dashboard');
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: 'Invalid credentials for the selected role.',
+      });
     }
-    router.push('/dashboard');
   }
 
   return (
@@ -61,9 +76,9 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
           render={({ field }) => (
             <FormItem className="relative">
               <FormControl>
-                <Input placeholder=" " {...field} />
+                <Input placeholder={idPlaceholder} {...field} />
               </FormControl>
-              <FormLabel className="absolute left-4 top-3 text-sm text-neutral-500 peer-focus:top-1 peer-focus:text-xs peer-focus:text-primary transition-all peer-placeholder-shown:top-3 peer-placeholder-shown:text-sm">
+              <FormLabel>
                 {idLabel}
               </FormLabel>
               <FormMessage />
@@ -78,7 +93,7 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
               <FormControl>
                 <Input type="password" placeholder=" " {...field} />
               </FormControl>
-               <FormLabel className="absolute left-4 top-3 text-sm text-neutral-500 peer-focus:top-1 peer-focus:text-xs peer-focus:text-primary transition-all peer-placeholder-shown:top-3 peer-placeholder-shown:text-sm">
+               <FormLabel>
                 Password
               </FormLabel>
               <FormMessage />
