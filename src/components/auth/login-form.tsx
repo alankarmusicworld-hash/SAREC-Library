@@ -16,33 +16,36 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '../ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 const formSchema = z.object({
-  email: z.string().email({ message: 'Please enter a valid email.' }),
+  id: z.string().min(1, { message: 'Please enter a valid ID.' }),
   password: z.string().min(1, { message: 'Password is required.' }),
-  role: z.enum(['admin', 'librarian', 'student']),
+  role: z.enum(['admin', 'librarian', 'student']).optional(),
 });
 
-export function LoginForm() {
+interface LoginFormProps {
+  role: 'admin' | 'librarian' | 'student';
+  idLabel?: string;
+  idPlaceholder?: string;
+}
+
+export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@example.com'}: LoginFormProps) {
   const router = useRouter();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: '',
+      id: '',
       password: '',
-      role: 'student',
+      role: role,
     },
   });
 
+  React.useEffect(() => {
+    form.setValue('role', role);
+  }, [role, form]);
+
   function onSubmit(data: z.infer<typeof formSchema>) {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && data.role) {
       localStorage.setItem('userRole', data.role);
     }
     router.push('/dashboard');
@@ -53,12 +56,12 @@ export function LoginForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
         <FormField
           control={form.control}
-          name="email"
+          name="id"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>{idLabel}</FormLabel>
               <FormControl>
-                <Input placeholder="user@example.com" {...field} />
+                <Input placeholder={idPlaceholder} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -73,28 +76,6 @@ export function LoginForm() {
               <FormControl>
                 <Input type="password" placeholder="••••••••" {...field} />
               </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="role"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Role</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a role" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="student">Student</SelectItem>
-                  <SelectItem value="librarian">Librarian</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
               <FormMessage />
             </FormItem>
           )}
