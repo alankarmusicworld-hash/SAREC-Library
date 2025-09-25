@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import Link from 'next/link';
+import { Eye, EyeOff } from 'lucide-react';
 
 const departments = [
   'Computer Science',
@@ -40,8 +40,7 @@ const departments = [
   'General',
 ];
 
-const currentYear = new Date().getFullYear();
-const years = Array.from({ length: 4 }, (_, i) => (currentYear - i).toString());
+const years = ['1st', '2nd', '3rd', '4th'];
 const semesters = Array.from({ length: 8 }, (_, i) => (i + 1).toString());
 
 const formSchema = z.object({
@@ -63,6 +62,8 @@ export function RegisterForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -78,6 +79,8 @@ export function RegisterForm() {
       confirmPassword: '',
     },
   });
+
+  const selectedYear = form.watch('year');
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true);
@@ -125,7 +128,7 @@ export function RegisterForm() {
         role: 'student',
         enrollmentNumber: data.enrollmentNumber,
         department: data.department,
-        year: parseInt(data.year),
+        year: data.year,
         semester: parseInt(data.semester),
         createdAt: new Date(),
         password: data.password, // Storing password for testing as requested
@@ -250,7 +253,7 @@ export function RegisterForm() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                    {years.map(y => <SelectItem key={y} value={y}>{y} Year</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -263,7 +266,7 @@ export function RegisterForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Semester</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedYear}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select semester" />
@@ -286,7 +289,18 @@ export function RegisterForm() {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input type="password" {...field} />
+                <div className="relative">
+                  <Input type={showPassword ? 'text' : 'password'} {...field} />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -299,7 +313,18 @@ export function RegisterForm() {
             <FormItem>
               <FormLabel>Confirm Password</FormLabel>
               <FormControl>
-                <Input type="password" {...field} />
+                <div className="relative">
+                   <Input type={showConfirmPassword ? 'text' : 'password'} {...field} />
+                   <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
