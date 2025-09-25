@@ -233,7 +233,7 @@ export function RegisterForm() {
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select year" />
-                    </Trigger>
+                    </SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="1">1st Year</SelectItem>
@@ -260,7 +260,7 @@ export function RegisterForm() {
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select semester" />
-                    </Trigger>
+                    </SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     {selectedYear && semesters[selectedYear] ? (
