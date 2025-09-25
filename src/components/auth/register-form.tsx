@@ -77,7 +77,7 @@ export function RegisterForm() {
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      // Step 1: Check if user already exists in Firestore (optional, as Auth handles it)
+      // Step 1: Check if user already exists in Firestore
       const usersRef = collection(db, 'users');
       const q = query(usersRef, where('email', '==', data.email));
       const querySnapshot = await getDocs(q);
@@ -110,7 +110,7 @@ export function RegisterForm() {
         department: data.department,
         year: data.year,
         semester: data.semester,
-        // Do not store password in Firestore!
+        password: data.password, // INSECURE: Storing password for testing purposes
       });
 
       toast({
@@ -136,7 +136,14 @@ export function RegisterForm() {
           title: 'Registration Failed',
           description: 'Password should be at least 6 characters.',
         });
-      } else {
+      } else if (error.code === 'auth/configuration-not-found') {
+        toast({
+            variant: "destructive",
+            title: "Configuration Error",
+            description: "Email/Password sign-in is not enabled in Firebase. Please contact an administrator.",
+        });
+      }
+       else {
         toast({
           variant: 'destructive',
           title: 'Registration Error',
@@ -226,7 +233,7 @@ export function RegisterForm() {
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select year" />
-                    </SelectTrigger>
+                    </Trigger>
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="1">1st Year</SelectItem>
@@ -253,7 +260,7 @@ export function RegisterForm() {
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select semester" />
-                    </SelectTrigger>
+                    </Trigger>
                   </FormControl>
                   <SelectContent>
                     {selectedYear && semesters[selectedYear] ? (
