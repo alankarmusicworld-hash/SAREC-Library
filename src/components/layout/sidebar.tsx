@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -9,14 +10,19 @@ import {
   Home,
   Library,
   Mail,
-  PanelLeft,
   Users,
+  LayoutGrid,
+  Book,
+  BookMarked,
+  CalendarClock,
+  CircleDollarSign,
+  User,
+  BookOpenCheck
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 type NavItem = {
   href: string;
@@ -25,18 +31,24 @@ type NavItem = {
 };
 
 const commonNav: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: Home },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
 ];
 
 const navItemsByRole: Record<string, NavItem[]> = {
-  admin: [{ href: '/dashboard/admin/users', label: 'Users', icon: Users }],
+  admin: [
+      { href: '/dashboard/admin/users', label: 'Users', icon: Users }
+    ],
   librarian: [
     { href: '/dashboard/librarian/inventory', label: 'Inventory', icon: BookCopy },
-    { href: '/dashboard/librarian/transactions', label: 'Transactions', icon: BookUp },
+    { href: '/dashboard/librarian/transactions', label: 'Transactions', icon: BookOpenCheck },
   ],
   student: [
-    { href: '/dashboard/student/browse', label: 'Browse', icon: BookCopy },
-    { href: '/dashboard/student/history', label: 'History', icon: History },
+    { href: '/dashboard/student/browse', label: 'All Books', icon: Book },
+    { href: '/dashboard/student/history', label: 'My Books', icon: BookMarked },
+    { href: '/dashboard/student/reservations', label: 'My Reservations', icon: CalendarClock },
+    { href: '/dashboard/student/fines', label: 'My Fines', icon: CircleDollarSign },
+    { href: '/dashboard/student/fine-history', label: 'Fine History', icon: History },
+    { href: '/dashboard/student/profile', label: 'My Profile', icon: User },
   ],
 };
 
@@ -50,12 +62,24 @@ const NavContent = () => {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setUserRole(localStorage.getItem('userRole'));
+      const role = localStorage.getItem('userRole');
+      setUserRole(role);
     }
   }, []);
 
-  const roleNav = userRole ? navItemsByRole[userRole] || [] : [];
-  const allNavs = [...commonNav, ...roleNav, ...contactNav];
+  const getNavs = () => {
+    if (!userRole) return [];
+    const roleNavs = navItemsByRole[userRole] || [];
+    if (userRole === 'student') {
+        // For students, add Dashboard to their specific nav items
+        return [...commonNav, ...roleNavs];
+    }
+    // For admin and librarian, they have their own sections.
+    // Assuming they don't need the contact form in their main nav.
+    return [...commonNav, ...roleNavs];
+  };
+
+  const allNavs = getNavs();
 
   return (
     <div className="flex-1">
@@ -80,7 +104,6 @@ const NavContent = () => {
 
 export default function Sidebar() {
   return (
-    <>
       <div className="hidden border-r bg-card md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
@@ -92,28 +115,5 @@ export default function Sidebar() {
           <NavContent />
         </div>
       </div>
-      <div className="md:hidden">
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="shrink-0">
-              <PanelLeft className="h-5 w-5" />
-              <span className="sr-only">Toggle navigation menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="flex flex-col">
-            <nav className="grid gap-2 text-lg font-medium">
-              <Link
-                href="#"
-                className="flex items-center gap-2 text-lg font-semibold"
-              >
-                <Library className="h-6 w-6 text-primary" />
-                <span className="sr-only">SAREC Library</span>
-              </Link>
-              <NavContent />
-            </nav>
-          </SheetContent>
-        </Sheet>
-      </div>
-    </>
   );
 }
