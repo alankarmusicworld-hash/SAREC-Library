@@ -14,7 +14,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { CreditCard, LogOut, Settings, User as UserIcon } from 'lucide-react';
+import {
+  CreditCard,
+  LogOut,
+  Settings,
+  User as UserIcon,
+  Bell,
+} from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Badge } from '../ui/badge';
 
 export function UserNav() {
   const router = useRouter();
@@ -39,57 +51,94 @@ export function UserNav() {
     }
     router.push('/');
   };
-  
+
   const getInitials = (name: string | null) => {
     if (!name) return '';
-    return name.split(' ').map(n => n[0]).join('');
-  }
-
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('');
+  };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <Avatar className="h-9 w-9">
-            <AvatarImage src={`https://avatar.vercel.sh/${userEmail}.png`} alt="User avatar" />
-            <AvatarFallback>
-              {userName ? getInitials(userName) : <UserIcon />}
-            </AvatarFallback>
-          </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">
-              {userName || (userRole ? `${userRole.charAt(0).toUpperCase() + userRole.slice(1)}` : 'Guest')}
-            </p>
-            <p className="text-xs leading-none text-muted-foreground">
-              {userEmail}
-            </p>
+    <div className="flex items-center gap-2">
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="h-5 w-5" />
+            <Badge className="absolute top-1 right-1 h-4 w-4 justify-center p-0 text-xs" variant="destructive">2</Badge>
+            <span className="sr-only">Notifications</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-80">
+          <div className="p-2">
+            <h3 className="font-medium text-lg mb-2">Notifications</h3>
+            <div className="flow-root">
+              <div className="-my-2 divide-y divide-gray-100 dark:divide-gray-700">
+                <div className="py-2">
+                   <p className="text-sm">Your book "The Great Gatsby" is due tomorrow.</p>
+                   <p className="text-xs text-muted-foreground mt-1">1 day ago</p>
+                </div>
+                <div className="py-2">
+                   <p className="text-sm">A new book in your favorite genre "Sci-Fi" has been added.</p>
+                    <p className="text-xs text-muted-foreground mt-1">3 days ago</p>
+                </div>
+              </div>
+            </div>
+             <Button variant="link" className="w-full mt-2">View all notifications</Button>
           </div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem disabled>
-            <UserIcon className="mr-2 h-4 w-4" />
-            <span>Profile</span>
+        </PopoverContent>
+      </Popover>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+            <Avatar className="h-9 w-9">
+              <AvatarImage
+                src={`https://avatar.vercel.sh/${userEmail}.png`}
+                alt="User avatar"
+              />
+              <AvatarFallback>
+                {userName ? getInitials(userName) : <UserIcon />}
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56" align="end" forceMount>
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium leading-none">
+                {userName ||
+                  (userRole
+                    ? `${userRole.charAt(0).toUpperCase() + userRole.slice(1)}`
+                    : 'Guest')}
+              </p>
+              <p className="text-xs leading-none text-muted-foreground">
+                {userEmail}
+              </p>
+            </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            <DropdownMenuItem disabled>
+              <UserIcon className="mr-2 h-4 w-4" />
+              <span>Profile</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled>
+              <CreditCard className="mr-2 h-4 w-4" />
+              <span>Billing</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled>
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Settings</span>
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleLogout}>
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Log out</span>
           </DropdownMenuItem>
-          <DropdownMenuItem disabled>
-            <CreditCard className="mr-2 h-4 w-4" />
-            <span>Billing</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem disabled>
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout}>
-          <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }
