@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -102,6 +103,14 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
         localStorage.setItem('userEmail', userData.email);
         localStorage.setItem('userName', userData.name);
         localStorage.setItem('userId', user.uid);
+
+        // Store additional student data
+        if (userData.role === 'student') {
+            localStorage.setItem('userEnrollment', userData.enrollmentNumber);
+            localStorage.setItem('userDepartment', userData.department);
+            localStorage.setItem('userYear', userData.year);
+            localStorage.setItem('userSemester', userData.semester);
+        }
       }
       toast({ title: 'Login Successful!', description: 'Redirecting to dashboard...' });
       router.push('/dashboard');
