@@ -77,7 +77,7 @@ const quickActions = [
 
 const adminStats = [
     { title: 'Total Books', value: '324', subtitle: '15 unique titles', icon: BookIcon },
-    { title: 'Active Members', value: '7', subtitle: 'All student members', icon: Users2 },
+    { title: 'Active Members', value: '7', subtitle: 'All student members', icon: Users2, color: 'text-green-500' },
     { title: 'Overdue', value: '3', subtitle: 'Auto-reminders enabled', icon: AlarmClockOff, color: 'text-red-500' },
     { title: 'Issued Today', value: '0', subtitle: 'Peak hours 1-3 PM', icon: BookCheck, color: 'text-orange-500' },
     { title: 'Pending Fines', value: '0', subtitle: 'Awaiting verification', icon: FileText, color: 'text-blue-500' },
