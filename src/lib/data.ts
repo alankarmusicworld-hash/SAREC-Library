@@ -34,6 +34,9 @@ export type Fine = {
   reason: string;
   dateIssued: string;
   status: 'paid' | 'unpaid';
+  paymentDate?: string | null;
+  paymentMethod?: 'cash' | 'online' | null;
+  verifiedBy?: 'admin' | 'librarian' | null;
 };
 
 
@@ -54,7 +57,7 @@ export const books: Book[] = [
     author: 'Harper Lee',
     isbn: '978-0061120084',
     publicationDate: '1960-07-11',
-    publisher: 'J. B. Lippincott &amp; Co.',
+    publisher: 'J. B. Lippincott & Co.',
     status: 'checked-out',
     coverImageUrl: 'https://picsum.photos/seed/book2/300/400',
   },
@@ -64,7 +67,7 @@ export const books: Book[] = [
     author: 'George Orwell',
     isbn: '978-0451524935',
     publicationDate: '1949-06-08',
-    publisher: 'Secker &amp; Warburg',
+    publisher: 'Secker & Warburg',
     status: 'available',
     coverImageUrl: 'https://picsum.photos/seed/book3/300/400',
   },
@@ -84,7 +87,7 @@ export const books: Book[] = [
     author: 'J.R.R. Tolkien',
     isbn: '978-0345339683',
     publicationDate: '1937-09-21',
-    publisher: 'George Allen &amp; Unwin',
+    publisher: 'George Allen & Unwin',
     status: 'checked-out',
     coverImageUrl: 'https://picsum.photos/seed/book5/300/400',
   },
@@ -94,7 +97,7 @@ export const books: Book[] = [
     author: 'Aldous Huxley',
     isbn: '978-0060850524',
     publicationDate: '1932-08-30',
-    publisher: 'Chatto &amp; Windus',
+    publisher: 'Chatto & Windus',
     status: 'available',
     coverImageUrl: 'https://picsum.photos/seed/book6/300/400',
   },
@@ -143,6 +146,9 @@ export const fines: Fine[] = [
       reason: 'Late return',
       dateIssued: '2024-05-05',
       status: 'unpaid',
+      paymentDate: null,
+      paymentMethod: null,
+      verifiedBy: null,
     },
     {
       id: 'f2',
@@ -152,14 +158,32 @@ export const fines: Fine[] = [
       reason: 'Book damaged',
       dateIssued: '2024-05-20',
       status: 'unpaid',
+      paymentDate: null,
+      paymentMethod: null,
+      verifiedBy: null,
     },
      {
       id: 'f3',
-      userId: '4',
+      userId: '3',
       bookId: '2',
       amount: 15.00,
       reason: 'Late return',
-      dateIssued: '2024-05-18',
+      dateIssued: '2024-04-18',
       status: 'paid',
+      paymentDate: '2024-04-22',
+      paymentMethod: 'online',
+      verifiedBy: 'librarian'
+    },
+    {
+      id: 'f4',
+      userId: '4',
+      bookId: '3',
+      amount: 25.00,
+      reason: 'Lost book',
+      dateIssued: '2024-03-10',
+      status: 'paid',
+      paymentDate: '2024-03-15',
+      paymentMethod: 'cash',
+      verifiedBy: 'admin'
     },
   ];
