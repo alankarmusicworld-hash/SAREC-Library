@@ -15,7 +15,8 @@ import {
   BookOpenCheck,
   AreaChart,
   Settings,
-  Library
+  Library,
+  History
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
