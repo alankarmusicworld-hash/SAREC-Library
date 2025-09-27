@@ -33,6 +33,7 @@ type StudentProfile = {
   semester: string;
   avatar: string | null;
   password?: string;
+  confirmPassword?: string;
 };
 
 const departments = [
@@ -55,6 +56,7 @@ const semesterOptions: Record<string, string[]> = {
 export default function ProfilePage() {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -69,7 +71,8 @@ export default function ProfilePage() {
         year: localStorage.getItem('userYear') || '',
         semester: localStorage.getItem('userSemester') || '',
         avatar: localStorage.getItem('userAvatar'),
-        password: '', // Should be fetched securely if needed
+        password: '',
+        confirmPassword: '',
       };
       setProfile(storedProfile);
       setIsLoading(false);
@@ -94,7 +97,6 @@ export default function ProfilePage() {
     setProfile(prev => {
         if (!prev) return null;
         const newProfile = { ...prev, [id]: value };
-        // If year is changed, reset semester
         if (id === 'year') {
             newProfile.semester = '';
         }
@@ -117,6 +119,15 @@ export default function ProfilePage() {
 
   const handleSaveChanges = () => {
     if (profile) {
+      if (profile.password && profile.password !== profile.confirmPassword) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Passwords do not match. Please re-enter.',
+        });
+        return;
+      }
+
       localStorage.setItem('userName', profile.name);
       localStorage.setItem('userDepartment', profile.department);
       localStorage.setItem('userYear', profile.year);
@@ -125,8 +136,6 @@ export default function ProfilePage() {
       if (profile.avatar) {
         localStorage.setItem('userAvatar', profile.avatar);
       }
-      // Note: In a real app, password updates would be handled by a backend service.
-      // Storing password in localStorage is insecure.
       toast({
         title: 'Profile Updated',
         description: 'Your profile information has been successfully saved.',
@@ -243,6 +252,9 @@ export default function ProfilePage() {
                     <Label htmlFor="email">Email Address</Label>
                     <Input id="email" type="email" value={profile.email} onChange={handleInputChange} />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
                     <div className="relative">
@@ -255,6 +267,21 @@ export default function ProfilePage() {
                             onClick={() => setShowPassword(!showPassword)}
                         >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                    </div>
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm Password</Label>
+                    <div className="relative">
+                        <Input id="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} placeholder="Confirm new password" onChange={handleInputChange} />
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
+                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </Button>
                     </div>
                 </div>
