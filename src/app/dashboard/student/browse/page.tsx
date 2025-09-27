@@ -66,6 +66,7 @@ export default function BrowsePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAuthor, setSelectedAuthor] = useState('');
   const [selectedPublisher, setSelectedPublisher] = useState('');
+  const [reservedBookIds, setReservedBookIds] = useState<string[]>([]);
   const { toast } = useToast();
   const { addNotification } = useNotifications();
 
@@ -115,7 +116,7 @@ export default function BrowsePage() {
 
   const handleReserve = (book: Book) => {
     // In a real app, you would make an API call here.
-    // For now, we'll just show a notification.
+    setReservedBookIds(prev => [...prev, book.id]);
     toast({
       title: 'Success!',
       description: `You have reserved "${book.title}".`,
@@ -211,44 +212,53 @@ export default function BrowsePage() {
                 </TableHeader>
                 <TableBody>
                   {filteredBooks.length > 0 ? (
-                    filteredBooks.map((book, index) => (
-                    <TableRow key={book.id}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell>
-                        <div className="font-medium">
-                           <Highlighted text={book.title} highlight={searchQuery} />
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                           <Highlighted text={book.isbn} highlight={searchQuery} />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                         <Highlighted text={book.author} highlight={searchQuery} />
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            book.status === 'available'
-                              ? 'secondary'
-                              : 'outline'
-                          }
-                        >
-                          {book.status === 'available'
-                            ? 'Available'
-                            : 'Checked Out'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          disabled={book.status !== 'available'}
-                          onClick={() => handleReserve(book)}
-                        >
-                          Reserve
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                    filteredBooks.map((book, index) => {
+                      const isReserved = reservedBookIds.includes(book.id);
+                      return (
+                        <TableRow key={book.id}>
+                          <TableCell>{index + 1}</TableCell>
+                          <TableCell>
+                            <div className="font-medium">
+                               <Highlighted text={book.title} highlight={searchQuery} />
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                               <Highlighted text={book.isbn} highlight={searchQuery} />
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                             <Highlighted text={book.author} highlight={searchQuery} />
+                          </TableCell>
+                          <TableCell>
+                            {isReserved ? (
+                                <Badge variant="default">Reserved by you</Badge>
+                            ) : (
+                                <Badge
+                                  variant={
+                                    book.status === 'available'
+                                      ? 'secondary'
+                                      : 'outline'
+                                  }
+                                >
+                                  {book.status === 'available'
+                                    ? 'Available'
+                                    : 'Checked Out'}
+                                </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {!isReserved && (
+                                <Button
+                                size="sm"
+                                disabled={book.status !== 'available'}
+                                onClick={() => handleReserve(book)}
+                                >
+                                Reserve
+                                </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
                 ) : (
                     <TableRow>
                         <TableCell colSpan={5} className="h-24 text-center">
