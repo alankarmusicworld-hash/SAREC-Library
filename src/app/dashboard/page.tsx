@@ -21,7 +21,7 @@ import {
   BookCheck,
   FileText,
   CalendarCheck,
-  Badge,
+  BadgeAlert,
 } from 'lucide-react';
 import {
   Card,
@@ -39,6 +39,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 import { useEffect, useState } from 'react';
 
@@ -86,7 +87,7 @@ const adminStats = [
 
 const recentIssues = [
     { bookTitle: 'Electrical Machines Ist', bookId: '81124932184567', member: 'Milind Lal Gond', memberId: '2412150209004', dueDate: '05/10/2025', status: 'Returned' },
-    { bookTitle: 'Electrical Machines Ist', bookId: '81124932184567', member: 'Milind Lal Gond', memberId: '2412150209004', dueDate: '05/10/2025', status: 'Issued' },
+    { bookTitle: 'Data Structures', bookId: '9780134322474', member: 'Jane Doe', memberId: '2412150209002', dueDate: '2024-07-15', status: 'Overdue' },
     { bookTitle: 'General English', bookId: '9780199478204', member: 'Milind Lal Gond', memberId: '2412150209004', dueDate: '05/10/2025', status: 'Issued' }
 ]
 
@@ -205,11 +206,11 @@ export default function DashboardPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[30%]">Book</TableHead>
-                        <TableHead className="w-[30%]">Member</TableHead>
-                        <TableHead className="w-[15%]">Due Date</TableHead>
-                        <TableHead className="w-[15%]">Status</TableHead>
-                        <TableHead className="w-[10%] text-right">Action</TableHead>
+                        <TableHead>Book</TableHead>
+                        <TableHead>Member</TableHead>
+                        <TableHead>Due Date</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -225,10 +226,16 @@ export default function DashboardPage() {
                           </TableCell>
                           <TableCell>{issue.dueDate}</TableCell>
                           <TableCell>
-                            <Badge variant={issue.status === 'Issued' ? 'outline' : 'secondary'}>{issue.status}</Badge>
+                            <Badge variant={
+                                issue.status === 'Issued' ? 'outline' 
+                                : issue.status === 'Overdue' ? 'destructive' 
+                                : 'secondary'
+                            }>
+                                {issue.status}
+                            </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            {issue.status === 'Issued' ? (
+                            {issue.status === 'Issued' || issue.status === 'Overdue' ? (
                               <Button variant="outline" size="sm">Return</Button>
                             ) : (
                               <span className="text-muted-foreground text-sm">Returned</span>
@@ -277,3 +284,5 @@ export default function DashboardPage() {
       </div>
   );
 }
+
+    
