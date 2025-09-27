@@ -14,6 +14,18 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { User, Mail, GraduationCap, Building, Calendar, BookOpen, Edit } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 type StudentProfile = {
   name: string | null;
@@ -80,10 +92,53 @@ export default function ProfilePage() {
             View and manage your profile details.
             </CardDescription>
         </div>
-        <Button variant="outline" size="sm" className="gap-2">
-            <Edit className="h-4 w-4"/>
-            Edit Profile
-        </Button>
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                    <Edit className="h-4 w-4"/>
+                    Edit Profile
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                <DialogTitle>Edit profile</DialogTitle>
+                <DialogDescription>
+                    Make changes to your profile here. Click save when you're done.
+                </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="name" className="text-right">
+                        Name
+                        </Label>
+                        <Input id="name" defaultValue={profile.name || ''} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="email" className="text-right">
+                        Email
+                        </Label>
+                        <Input id="email" defaultValue={profile.email || ''} className="col-span-3" disabled />
+                    </div>
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="enrollment" className="text-right">
+                        Enrollment
+                        </Label>
+                        <Input id="enrollment" defaultValue={profile.enrollment || ''} className="col-span-3" disabled />
+                    </div>
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="department" className="text-right">
+                        Department
+                        </Label>
+                        <Input id="department" defaultValue={profile.department || ''} className="col-span-3" />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button type="submit">Save changes</Button>
+                    </DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col md:flex-row items-start gap-8">
