@@ -28,6 +28,9 @@ import {
     TabsList,
     TabsTrigger,
   } from '@/components/ui/tabs';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // This function can be expanded to fetch books from an API
 async function getBooks(): Promise<Book[]> {
@@ -59,20 +62,51 @@ const Highlighted = ({ text, highlight }: { text: string; highlight: string }) =
 export default function BrowsePage() {
   const [allBooks, setAllBooks] = useState<Book[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedAuthor, setSelectedAuthor] = useState('');
+  const [selectedPublication, setSelectedPublication] = useState('');
 
   useEffect(() => {
     getBooks().then(setAllBooks);
   }, []);
 
+  const authors = useMemo(() => {
+    const authorSet = new Set(allBooks.map(book => book.author));
+    return Array.from(authorSet);
+  }, [allBooks]);
+
+  const publicationDates = useMemo(() => {
+    const dateSet = new Set(allBooks.map(book => book.publicationDate.substring(0,4)));
+    return Array.from(dateSet).sort((a,b) => b.localeCompare(a));
+  }, [allBooks]);
+
+
   const filteredBooks = useMemo(() => {
-    if (!searchQuery) return allBooks;
-    return allBooks.filter(
-      (book) =>
-        book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        book.isbn.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        book.author.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [searchQuery, allBooks]);
+    let books = allBooks;
+
+    if (searchQuery) {
+        books = books.filter(
+            (book) =>
+            book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            book.isbn.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            book.author.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }
+
+    if (selectedAuthor) {
+        books = books.filter(book => book.author === selectedAuthor);
+    }
+
+    if (selectedPublication) {
+        books = books.filter(book => book.publicationDate.startsWith(selectedPublication));
+    }
+    
+    return books;
+  }, [searchQuery, allBooks, selectedAuthor, selectedPublication]);
+
+  const clearFilters = () => {
+    setSelectedAuthor('');
+    setSelectedPublication('');
+  }
 
   return (
     <Card>
@@ -99,10 +133,53 @@ export default function BrowsePage() {
                           onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <Button variant="outline" className="gap-2 h-10">
-                        <Filter className="h-4 w-4" />
-                        Filter
-                    </Button>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className="gap-2 h-10">
+                                <Filter className="h-4 w-4" />
+                                Filter
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80">
+                            <div className="grid gap-4">
+                                <div className="space-y-2">
+                                    <h4 className="font-medium leading-none">Filters</h4>
+                                    <p className="text-sm text-muted-foreground">
+                                        Refine your book search.
+                                    </p>
+                                </div>
+                                <div className="grid gap-2">
+                                    <div className="grid grid-cols-3 items-center gap-4">
+                                        <Label htmlFor="author">Author</Label>
+                                        <Select onValueChange={setSelectedAuthor} value={selectedAuthor}>
+                                            <SelectTrigger className="col-span-2 h-8">
+                                                <SelectValue placeholder="Select author" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {authors.map(author => (
+                                                    <SelectItem key={author} value={author}>{author}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="grid grid-cols-3 items-center gap-4">
+                                        <Label htmlFor="publication">Publication</Label>
+                                        <Select onValueChange={setSelectedPublication} value={selectedPublication}>
+                                            <SelectTrigger className="col-span-2 h-8">
+                                                <SelectValue placeholder="Select year" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {publicationDates.map(date => (
+                                                    <SelectItem key={date} value={date}>{date}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                                <Button variant="ghost" onClick={clearFilters}>Clear Filters</Button>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
                 </div>
             </div>
           <TabsContent value="all" className="mt-4">
@@ -159,7 +236,7 @@ export default function BrowsePage() {
                 ) : (
                     <TableRow>
                         <TableCell colSpan={5} className="h-24 text-center">
-                            No books found for "{searchQuery}".
+                            No books found.
                         </TableCell>
                     </TableRow>
                 )}
