@@ -5,11 +5,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   BookCopy,
-  BookUp,
-  History,
-  Home,
-  Library,
-  Mail,
   Users,
   LayoutGrid,
   Book,
@@ -17,12 +12,14 @@ import {
   CalendarClock,
   CircleDollarSign,
   User,
-  BookOpenCheck
+  BookOpenCheck,
+  AreaChart,
+  Settings,
+  Library
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 
 type NavItem = {
   href: string;
@@ -36,7 +33,13 @@ const commonNav: NavItem[] = [
 
 const navItemsByRole: Record<string, NavItem[]> = {
   admin: [
-      { href: '/dashboard/admin/users', label: 'Users', icon: Users }
+      { href: '/dashboard/librarian/inventory', label: 'Catalog', icon: BookCopy },
+      { href: '/dashboard/admin/users', label: 'Members', icon: Users },
+      { href: '/dashboard/librarian/transactions', label: 'Issues/Returns', icon: BookOpenCheck },
+      { href: '/dashboard/student/reservations', label: 'Reservations', icon: CalendarClock },
+      { href: '/dashboard/student/fines', label: 'Fines', icon: CircleDollarSign },
+      { href: '#', label: 'Reports', icon: AreaChart },
+      { href: '#', label: 'Settings', icon: Settings },
     ],
   librarian: [
     { href: '/dashboard/librarian/inventory', label: 'Inventory', icon: BookCopy },
@@ -52,10 +55,6 @@ const navItemsByRole: Record<string, NavItem[]> = {
   ],
 };
 
-const contactNav: NavItem[] = [
-  { href: '/dashboard/contact', label: 'Contact Us', icon: Mail },
-];
-
 const NavContent = () => {
   const pathname = usePathname();
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -70,12 +69,6 @@ const NavContent = () => {
   const getNavs = () => {
     if (!userRole) return [];
     const roleNavs = navItemsByRole[userRole] || [];
-    if (userRole === 'student') {
-        // For students, add Dashboard to their specific nav items
-        return [...commonNav, ...roleNavs];
-    }
-    // For admin and librarian, they have their own sections.
-    // Assuming they don't need the contact form in their main nav.
     return [...commonNav, ...roleNavs];
   };
 
@@ -90,7 +83,7 @@ const NavContent = () => {
             href={href}
             className={cn(
               'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
-              pathname === href && 'bg-muted text-primary'
+              pathname === href && 'bg-primary/10 text-primary'
             )}
           >
             <Icon className="h-4 w-4" />
@@ -103,13 +96,29 @@ const NavContent = () => {
 };
 
 export default function Sidebar() {
+    const [userRole, setUserRole] = useState<string | null>(null);
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+        const role = localStorage.getItem('userRole');
+        setUserRole(role);
+        }
+    }, []);
   return (
       <div className="hidden border-r bg-background md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-              <Library className="h-6 w-6 text-primary" />
-              <span className="">SAREC Library</span>
+              <div className="bg-primary text-primary-foreground p-2 rounded-lg">
+                <Library className="h-6 w-6" />
+              </div>
+              <div>
+                <span className="text-lg">SAREC Library</span>
+                 {(userRole === 'admin' || userRole === 'librarian') && (
+                    <span className="block text-xs text-muted-foreground font-normal -mt-1">
+                        {userRole.toUpperCase()} PANEL
+                    </span>
+                )}
+              </div>
             </Link>
           </div>
           <NavContent />

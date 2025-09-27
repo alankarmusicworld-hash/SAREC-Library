@@ -15,6 +15,13 @@ import {
   Clock,
   BookOpenCheck,
   IndianRupee,
+  Book as BookIcon,
+  Users2,
+  AlarmClockOff,
+  BookCheck,
+  FileText,
+  CalendarCheck,
+  Badge,
 } from 'lucide-react';
 import {
   Card,
@@ -23,6 +30,16 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+
 import { useEffect, useState } from 'react';
 
 const quickActions = [
@@ -58,28 +75,19 @@ const quickActions = [
   },
 ];
 
-const adminFeatures = [
-    {
-      title: 'Manage Users',
-      description: 'Add, edit, or remove user accounts.',
-      href: '/dashboard/admin/users',
-      icon: Users,
-    },
+const adminStats = [
+    { title: 'Total Books', value: '324', subtitle: '15 unique titles', icon: BookIcon },
+    { title: 'Active Members', value: '7', subtitle: 'All student members', icon: Users2 },
+    { title: 'Overdue', value: '3', subtitle: 'Auto-reminders enabled', icon: AlarmClockOff, color: 'text-red-500' },
+    { title: 'Issued Today', value: '0', subtitle: 'Peak hours 1-3 PM', icon: BookCheck, color: 'text-orange-500' },
+    { title: 'Pending Fines', value: '0', subtitle: 'Awaiting verification', icon: FileText, color: 'text-blue-500' },
+    { title: 'Reservations', value: '2', subtitle: 'In queue for books', icon: CalendarCheck, color: 'text-purple-500' },
 ];
 
-const librarianFeatures = [
-    {
-      title: 'Book Inventory',
-      description: 'Manage the library book stock.',
-      href: '/dashboard/librarian/inventory',
-      icon: BookUp,
-    },
-    {
-        title: 'Transactions',
-        description: 'Check-out or return books.',
-        href: '/dashboard/librarian/transactions',
-        icon: BookOpenCheck,
-    }
+const recentIssues = [
+    { bookTitle: 'Electrical Machines Ist', bookId: '81124932184567', member: 'Milind Lal Gond', memberId: '2412150209004', dueDate: '05/10/2025', status: 'Returned' },
+    { bookTitle: 'Electrical Machines Ist', bookId: '81124932184567', member: 'Milind Lal Gond', memberId: '2412150209004', dueDate: '05/10/2025', status: 'Issued' },
+    { bookTitle: 'General English', bookId: '9780199478204', member: 'Milind Lal Gond', memberId: '2412150209004', dueDate: '05/10/2025', status: 'Issued' }
 ]
 
 export default function DashboardPage() {
@@ -170,37 +178,100 @@ export default function DashboardPage() {
     );
   }
   
-  const features = userRole === 'admin' ? adminFeatures : userRole === 'librarian' ? librarianFeatures : [];
-
+ if (userRole === 'admin' || userRole === 'librarian') {
+    return (
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+        <div className="lg:col-span-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {adminStats.map((stat) => (
+              <Card key={stat.title}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                  <stat.icon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stat.value}</div>
+                  <p className={`text-xs ${stat.color || 'text-muted-foreground'}`}>{stat.subtitle}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Recent Issues</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Book</TableHead>
+                    <TableHead>Member</TableHead>
+                    <TableHead>Due Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentIssues.map((issue, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <div className="font-medium">{issue.bookTitle}</div>
+                        <div className="text-xs text-muted-foreground">{issue.bookId}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">{issue.member}</div>
+                        <div className="text-xs text-muted-foreground">{issue.memberId}</div>
+                      </TableCell>
+                      <TableCell>{issue.dueDate}</TableCell>
+                      <TableCell>
+                        <Badge variant={issue.status === 'Issued' ? 'outline' : 'secondary'}>{issue.status}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {issue.status === 'Issued' ? (
+                          <Button variant="outline" size="sm">Return</Button>
+                        ) : (
+                          <span className="text-muted-foreground">Returned</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>At a glance</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              <div className="flex items-center justify-between rounded-lg bg-muted p-4">
+                <span className="text-sm font-medium">Loan Period</span>
+                <span className="font-semibold">14 days</span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg bg-muted p-4">
+                <span className="text-sm font-medium">Fine per Day</span>
+                <span className="font-semibold">₹5</span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg bg-muted p-4">
+                <span className="text-sm font-medium">Total Books Issued</span>
+                <span className="font-semibold">8</span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg bg-muted p-4">
+                <span className="text-sm font-medium">Total Books Returned</span>
+                <span className="font-semibold">2</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+  
   return (
-    <div className="flex flex-col gap-4">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
-          Welcome to the SAREC Library Portal
-        </h1>
-        <p className="mt-2 text-lg text-muted-foreground">
-          Your one-stop solution for library management.
-        </p>
+      <div className="flex flex-col items-center justify-center h-full">
+            <p className="text-muted-foreground">Loading dashboard...</p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {features.map((feature) => (
-          <Link href={feature.href} key={feature.title} className="group">
-            <Card className="flex h-full flex-col transition-all group-hover:shadow-lg group-hover:-translate-y-1">
-              <CardHeader className="flex flex-row items-center gap-4">
-                <div className="rounded-lg bg-primary p-3 text-primary-foreground">
-                  <feature.icon className="h-6 w-6" />
-                </div>
-                <div>
-                  <CardTitle>{feature.title}</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>{feature.description}</CardDescription>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
-    </div>
   );
 }
