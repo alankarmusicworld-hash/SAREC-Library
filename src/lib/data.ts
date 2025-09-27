@@ -1,9 +1,11 @@
+
 export type Book = {
   id: string;
   title: string;
   author: string;
   isbn: string;
   publicationDate: string;
+  publisher: string;
   status: 'available' | 'checked-out';
   coverImageUrl: string;
 };
@@ -31,6 +33,7 @@ export const books: Book[] = [
     author: 'F. Scott Fitzgerald',
     isbn: '978-0743273565',
     publicationDate: '1925-04-10',
+    publisher: "Scribner's",
     status: 'available',
     coverImageUrl: 'https://picsum.photos/seed/book1/300/400',
   },
@@ -40,6 +43,7 @@ export const books: Book[] = [
     author: 'Harper Lee',
     isbn: '978-0061120084',
     publicationDate: '1960-07-11',
+    publisher: 'J. B. Lippincott & Co.',
     status: 'checked-out',
     coverImageUrl: 'https://picsum.photos/seed/book2/300/400',
   },
@@ -49,6 +53,7 @@ export const books: Book[] = [
     author: 'George Orwell',
     isbn: '978-0451524935',
     publicationDate: '1949-06-08',
+    publisher: 'Secker & Warburg',
     status: 'available',
     coverImageUrl: 'https://picsum.photos/seed/book3/300/400',
   },
@@ -58,6 +63,7 @@ export const books: Book[] = [
     author: 'Jane Austen',
     isbn: '978-1503290563',
     publicationDate: '1813-01-28',
+    publisher: 'T. Egerton, Whitehall',
     status: 'available',
     coverImageUrl: 'https://picsum.photos/seed/book4/300/400',
   },
@@ -67,6 +73,7 @@ export const books: Book[] = [
     author: 'J.R.R. Tolkien',
     isbn: '978-0345339683',
     publicationDate: '1937-09-21',
+    publisher: 'George Allen & Unwin',
     status: 'checked-out',
     coverImageUrl: 'https://picsum.photos/seed/book5/300/400',
   },
@@ -76,6 +83,7 @@ export const books: Book[] = [
     author: 'Aldous Huxley',
     isbn: '978-0060850524',
     publicationDate: '1932-08-30',
+    publisher: 'Chatto & Windus',
     status: 'available',
     coverImageUrl: 'https://picsum.photos/seed/book6/300/400',
   },

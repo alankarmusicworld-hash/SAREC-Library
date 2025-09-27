@@ -63,7 +63,7 @@ export default function BrowsePage() {
   const [allBooks, setAllBooks] = useState<Book[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAuthor, setSelectedAuthor] = useState('');
-  const [selectedPublication, setSelectedPublication] = useState('');
+  const [selectedPublisher, setSelectedPublisher] = useState('');
 
   useEffect(() => {
     getBooks().then(setAllBooks);
@@ -74,9 +74,9 @@ export default function BrowsePage() {
     return Array.from(authorSet);
   }, [allBooks]);
 
-  const publicationDates = useMemo(() => {
-    const dateSet = new Set(allBooks.map(book => book.publicationDate.substring(0,4)));
-    return Array.from(dateSet).sort((a,b) => b.localeCompare(a));
+  const publishers = useMemo(() => {
+    const publisherSet = new Set(allBooks.map(book => book.publisher));
+    return Array.from(publisherSet).sort();
   }, [allBooks]);
 
 
@@ -96,16 +96,16 @@ export default function BrowsePage() {
         books = books.filter(book => book.author === selectedAuthor);
     }
 
-    if (selectedPublication) {
-        books = books.filter(book => book.publicationDate.startsWith(selectedPublication));
+    if (selectedPublisher) {
+        books = books.filter(book => book.publisher === selectedPublisher);
     }
     
     return books;
-  }, [searchQuery, allBooks, selectedAuthor, selectedPublication]);
+  }, [searchQuery, allBooks, selectedAuthor, selectedPublisher]);
 
   const clearFilters = () => {
     setSelectedAuthor('');
-    setSelectedPublication('');
+    setSelectedPublisher('');
   }
 
   return (
@@ -163,14 +163,14 @@ export default function BrowsePage() {
                                         </Select>
                                     </div>
                                     <div className="grid grid-cols-3 items-center gap-4">
-                                        <Label htmlFor="publication">Publication</Label>
-                                        <Select onValueChange={setSelectedPublication} value={selectedPublication}>
+                                        <Label htmlFor="publisher">Publisher</Label>
+                                        <Select onValueChange={setSelectedPublisher} value={selectedPublisher}>
                                             <SelectTrigger className="col-span-2 h-8">
-                                                <SelectValue placeholder="Select year" />
+                                                <SelectValue placeholder="Select publisher" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {publicationDates.map(date => (
-                                                    <SelectItem key={date} value={date}>{date}</SelectItem>
+                                                {publishers.map(publisher => (
+                                                    <SelectItem key={publisher} value={publisher}>{publisher}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
