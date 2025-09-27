@@ -31,6 +31,8 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+import { useNotifications } from '@/context/NotificationProvider';
 
 // This function can be expanded to fetch books from an API
 async function getBooks(): Promise<Book[]> {
@@ -64,6 +66,9 @@ export default function BrowsePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAuthor, setSelectedAuthor] = useState('');
   const [selectedPublisher, setSelectedPublisher] = useState('');
+  const { toast } = useToast();
+  const { addNotification } = useNotifications();
+
 
   useEffect(() => {
     getBooks().then(setAllBooks);
@@ -107,6 +112,16 @@ export default function BrowsePage() {
     setSelectedAuthor('');
     setSelectedPublisher('');
   }
+
+  const handleReserve = (book: Book) => {
+    // In a real app, you would make an API call here.
+    // For now, we'll just show a notification.
+    toast({
+      title: 'Success!',
+      description: `You have reserved "${book.title}".`,
+    });
+    addNotification(`Your reservation for "${book.title}" is confirmed.`);
+  };
 
   return (
     <Card>
@@ -227,6 +242,7 @@ export default function BrowsePage() {
                         <Button
                           size="sm"
                           disabled={book.status !== 'available'}
+                          onClick={() => handleReserve(book)}
                         >
                           Reserve
                         </Button>

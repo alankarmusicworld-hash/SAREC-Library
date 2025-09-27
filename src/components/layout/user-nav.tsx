@@ -1,7 +1,9 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatDistanceToNow } from 'date-fns';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -27,12 +29,14 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Badge } from '../ui/badge';
+import { useNotifications } from '@/context/NotificationProvider';
 
 export function UserNav() {
   const router = useRouter();
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const { notifications, clearNotifications } = useNotifications();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -66,26 +70,41 @@ export function UserNav() {
         <PopoverTrigger asChild>
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-5 w-5" />
-            <Badge className="absolute top-1 right-1 h-4 w-4 justify-center p-0 text-xs" variant="destructive">2</Badge>
+            {notifications.length > 0 && (
+                <Badge className="absolute top-1 right-1 h-4 w-4 justify-center p-0 text-xs" variant="destructive">
+                    {notifications.length}
+                </Badge>
+            )}
             <span className="sr-only">Notifications</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent align="end" className="w-80">
           <div className="p-2">
-            <h3 className="font-medium text-lg mb-2">Notifications</h3>
-            <div className="flow-root">
-              <div className="-my-2 divide-y divide-gray-100 dark:divide-gray-700">
-                <div className="py-2">
-                   <p className="text-sm">Your book "The Great Gatsby" is due tomorrow.</p>
-                   <p className="text-xs text-muted-foreground mt-1">1 day ago</p>
-                </div>
-                <div className="py-2">
-                   <p className="text-sm">A new book in your favorite genre "Sci-Fi" has been added.</p>
-                    <p className="text-xs text-muted-foreground mt-1">3 days ago</p>
-                </div>
-              </div>
+            <div className="flex justify-between items-center mb-2">
+                <h3 className="font-medium text-lg">Notifications</h3>
+                {notifications.length > 0 && (
+                    <Button variant="link" className="p-0 h-auto" onClick={clearNotifications}>Clear all</Button>
+                )}
             </div>
-             <Button variant="link" className="w-full mt-2">View all notifications</Button>
+            <div className="flow-root">
+                {notifications.length > 0 ? (
+                    <div className="-my-2 divide-y divide-gray-100 dark:divide-gray-700">
+                        {notifications.map((notif) => (
+                            <div key={notif.id} className="py-2">
+                                <p className="text-sm">{notif.message}</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    {formatDistanceToNow(notif.timestamp, { addSuffix: true })}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="py-4 text-center text-sm text-muted-foreground">
+                        You have no new notifications.
+                    </div>
+                )}
+            </div>
+             <Button variant="link" className="w-full mt-2" disabled>View all notifications</Button>
           </div>
         </PopoverContent>
       </Popover>
