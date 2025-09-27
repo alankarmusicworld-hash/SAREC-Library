@@ -195,7 +195,7 @@ export default function DashboardPage() {
               </Card>
             ))}
           </div>
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
             <div className="lg:col-span-3">
               <Card>
                 <CardHeader>
@@ -205,11 +205,11 @@ export default function DashboardPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Book</TableHead>
-                        <TableHead>Member</TableHead>
-                        <TableHead>Due Date</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Action</TableHead>
+                        <TableHead className="w-[30%]">Book</TableHead>
+                        <TableHead className="w-[30%]">Member</TableHead>
+                        <TableHead className="w-[15%]">Due Date</TableHead>
+                        <TableHead className="w-[15%]">Status</TableHead>
+                        <TableHead className="w-[10%] text-right">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -227,11 +227,11 @@ export default function DashboardPage() {
                           <TableCell>
                             <Badge variant={issue.status === 'Issued' ? 'outline' : 'secondary'}>{issue.status}</Badge>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="text-right">
                             {issue.status === 'Issued' ? (
                               <Button variant="outline" size="sm">Return</Button>
                             ) : (
-                              <span className="text-muted-foreground">Returned</span>
+                              <span className="text-muted-foreground text-sm">Returned</span>
                             )}
                           </TableCell>
                         </TableRow>
@@ -241,7 +241,7 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
             </div>
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-2">
               <Card>
                 <CardHeader>
                   <CardTitle>At a glance</CardTitle>
