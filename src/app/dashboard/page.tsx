@@ -180,8 +180,7 @@ export default function DashboardPage() {
   
  if (userRole === 'admin' || userRole === 'librarian') {
     return (
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
-        <div className="lg:col-span-3">
+      <div className="flex flex-col gap-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {adminStats.map((stat) => (
               <Card key={stat.title}>
@@ -196,76 +195,79 @@ export default function DashboardPage() {
               </Card>
             ))}
           </div>
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Recent Issues</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Book</TableHead>
-                    <TableHead>Member</TableHead>
-                    <TableHead>Due Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentIssues.map((issue, index) => (
-                    <TableRow key={index}>
-                      <TableCell>
-                        <div className="font-medium">{issue.bookTitle}</div>
-                        <div className="text-xs text-muted-foreground">{issue.bookId}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{issue.member}</div>
-                        <div className="text-xs text-muted-foreground">{issue.memberId}</div>
-                      </TableCell>
-                      <TableCell>{issue.dueDate}</TableCell>
-                      <TableCell>
-                        <Badge variant={issue.status === 'Issued' ? 'outline' : 'secondary'}>{issue.status}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        {issue.status === 'Issued' ? (
-                          <Button variant="outline" size="sm">Return</Button>
-                        ) : (
-                          <span className="text-muted-foreground">Returned</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+            <div className="lg:col-span-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Issues</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Book</TableHead>
+                        <TableHead>Member</TableHead>
+                        <TableHead>Due Date</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {recentIssues.map((issue, index) => (
+                        <TableRow key={index}>
+                          <TableCell>
+                            <div className="font-medium">{issue.bookTitle}</div>
+                            <div className="text-xs text-muted-foreground">{issue.bookId}</div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium">{issue.member}</div>
+                            <div className="text-xs text-muted-foreground">{issue.memberId}</div>
+                          </TableCell>
+                          <TableCell>{issue.dueDate}</TableCell>
+                          <TableCell>
+                            <Badge variant={issue.status === 'Issued' ? 'outline' : 'secondary'}>{issue.status}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {issue.status === 'Issued' ? (
+                              <Button variant="outline" size="sm">Return</Button>
+                            ) : (
+                              <span className="text-muted-foreground">Returned</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="lg:col-span-1">
+              <Card>
+                <CardHeader>
+                  <CardTitle>At a glance</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                  <div className="flex items-center justify-between rounded-lg bg-muted p-4">
+                    <span className="text-sm font-medium">Loan Period</span>
+                    <span className="font-semibold">14 days</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg bg-muted p-4">
+                    <span className="text-sm font-medium">Fine per Day</span>
+                    <span className="font-semibold">₹5</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg bg-muted p-4">
+                    <span className="text-sm font-medium">Total Books Issued</span>
+                    <span className="font-semibold">8</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg bg-muted p-4">
+                    <span className="text-sm font-medium">Total Books Returned</span>
+                    <span className="font-semibold">2</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>At a glance</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              <div className="flex items-center justify-between rounded-lg bg-muted p-4">
-                <span className="text-sm font-medium">Loan Period</span>
-                <span className="font-semibold">14 days</span>
-              </div>
-              <div className="flex items-center justify-between rounded-lg bg-muted p-4">
-                <span className="text-sm font-medium">Fine per Day</span>
-                <span className="font-semibold">₹5</span>
-              </div>
-              <div className="flex items-center justify-between rounded-lg bg-muted p-4">
-                <span className="text-sm font-medium">Total Books Issued</span>
-                <span className="font-semibold">8</span>
-              </div>
-              <div className="flex items-center justify-between rounded-lg bg-muted p-4">
-                <span className="text-sm font-medium">Total Books Returned</span>
-                <span className="font-semibold">2</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
     )
   }
   
