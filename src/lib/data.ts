@@ -26,6 +26,17 @@ export type BorrowingHistory = {
   returnDate: string | null;
 };
 
+export type Fine = {
+  id: string;
+  userId: string;
+  bookId: string;
+  amount: number;
+  reason: string;
+  dateIssued: string;
+  status: 'paid' | 'unpaid';
+};
+
+
 export const books: Book[] = [
   {
     id: '1',
@@ -43,7 +54,7 @@ export const books: Book[] = [
     author: 'Harper Lee',
     isbn: '978-0061120084',
     publicationDate: '1960-07-11',
-    publisher: 'J. B. Lippincott & Co.',
+    publisher: 'J. B. Lippincott &amp; Co.',
     status: 'checked-out',
     coverImageUrl: 'https://picsum.photos/seed/book2/300/400',
   },
@@ -53,7 +64,7 @@ export const books: Book[] = [
     author: 'George Orwell',
     isbn: '978-0451524935',
     publicationDate: '1949-06-08',
-    publisher: 'Secker & Warburg',
+    publisher: 'Secker &amp; Warburg',
     status: 'available',
     coverImageUrl: 'https://picsum.photos/seed/book3/300/400',
   },
@@ -73,7 +84,7 @@ export const books: Book[] = [
     author: 'J.R.R. Tolkien',
     isbn: '978-0345339683',
     publicationDate: '1937-09-21',
-    publisher: 'George Allen & Unwin',
+    publisher: 'George Allen &amp; Unwin',
     status: 'checked-out',
     coverImageUrl: 'https://picsum.photos/seed/book5/300/400',
   },
@@ -83,7 +94,7 @@ export const books: Book[] = [
     author: 'Aldous Huxley',
     isbn: '978-0060850524',
     publicationDate: '1932-08-30',
-    publisher: 'Chatto & Windus',
+    publisher: 'Chatto &amp; Windus',
     status: 'available',
     coverImageUrl: 'https://picsum.photos/seed/book6/300/400',
   },
@@ -122,3 +133,33 @@ export const borrowingHistory: BorrowingHistory[] = [
     returnDate: '2024-04-28',
   },
 ];
+
+export const fines: Fine[] = [
+    {
+      id: 'f1',
+      userId: '3',
+      bookId: '1',
+      amount: 20.00,
+      reason: 'Late return',
+      dateIssued: '2024-05-05',
+      status: 'unpaid',
+    },
+    {
+      id: 'f2',
+      userId: '3',
+      bookId: '5',
+      amount: 50.00,
+      reason: 'Book damaged',
+      dateIssued: '2024-05-20',
+      status: 'unpaid',
+    },
+     {
+      id: 'f3',
+      userId: '4',
+      bookId: '2',
+      amount: 15.00,
+      reason: 'Late return',
+      dateIssued: '2024-05-18',
+      status: 'paid',
+    },
+  ];
