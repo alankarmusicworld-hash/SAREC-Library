@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ChangeEvent, useRef } from 'react';
 import {
   Card,
   CardContent,
@@ -12,7 +12,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { User, Mail, GraduationCap, Building, Calendar, BookOpen, Edit } from 'lucide-react';
+import { User, Mail, GraduationCap, Building, Calendar, BookOpen, Edit, Camera } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 
 type StudentProfile = {
   name: string | null;
@@ -34,23 +35,77 @@ type StudentProfile = {
   department: string | null;
   year: string | null;
   semester: string | null;
+  avatar: string | null;
 };
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
+  const [editedName, setEditedName] = useState('');
+  const [editedDepartment, setEditedDepartment] = useState('');
+  const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setProfile({
+      const storedProfile = {
         name: localStorage.getItem('userName'),
         email: localStorage.getItem('userEmail'),
         enrollment: localStorage.getItem('userEnrollment'),
         department: localStorage.getItem('userDepartment'),
         year: localStorage.getItem('userYear'),
         semester: localStorage.getItem('userSemester'),
-      });
+        avatar: localStorage.getItem('userAvatar'),
+      };
+      setProfile(storedProfile);
+      setEditedName(storedProfile.name || '');
+      setEditedDepartment(storedProfile.department || '');
+      setPreviewAvatar(storedProfile.avatar);
     }
   }, []);
+
+  const getInitials = (name: string | null) => {
+    if (!name) return '';
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase();
+  };
+
+  const handleSaveChanges = () => {
+    if (profile) {
+        const updatedProfile = { 
+            ...profile, 
+            name: editedName, 
+            department: editedDepartment,
+            avatar: previewAvatar,
+        };
+        setProfile(updatedProfile);
+
+        localStorage.setItem('userName', editedName);
+        localStorage.setItem('userDepartment', editedDepartment);
+        if (previewAvatar) {
+            localStorage.setItem('userAvatar', previewAvatar);
+        }
+        
+        toast({
+            title: 'Profile Updated',
+            description: 'Your profile information has been saved.',
+        });
+    }
+  };
+
+  const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setPreviewAvatar(reader.result as string);
+        }
+        reader.readAsDataURL(file);
+    }
+  }
 
   if (!profile) {
     return (
@@ -64,14 +119,6 @@ export default function ProfilePage() {
       </Card>
     );
   }
-
-  const getInitials = (name: string | null) => {
-    if (!name) return '';
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('');
-  };
 
   const ProfileField = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: string | null }) => (
     <div className="flex items-center gap-4">
@@ -92,49 +139,74 @@ export default function ProfilePage() {
             View and manage your profile details.
             </CardDescription>
         </div>
-        <Dialog>
+        <Dialog onOpenChange={(open) => {
+            if (!open) {
+                // Reset preview on close if not saved
+                setPreviewAvatar(profile.avatar);
+            }
+        }}>
             <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
                     <Edit className="h-4 w-4"/>
                     Edit Profile
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                 <DialogTitle>Edit profile</DialogTitle>
                 <DialogDescription>
                     Make changes to your profile here. Click save when you're done.
                 </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="name" className="text-right">
-                        Name
-                        </Label>
-                        <Input id="name" defaultValue={profile.name || ''} className="col-span-3" />
+                <div className="grid gap-6 py-4">
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="relative">
+                            <Avatar className="h-24 w-24">
+                                <AvatarImage src={previewAvatar || `https://avatar.vercel.sh/${profile.email}.png`} alt={profile.name || 'Student'} />
+                                <AvatarFallback className="text-3xl">{getInitials(profile.name)}</AvatarFallback>
+                            </Avatar>
+                            <Button
+                                size="icon"
+                                variant="outline"
+                                className="absolute -bottom-2 -right-2 rounded-full h-8 w-8"
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                <Camera className="h-4 w-4" />
+                            </Button>
+                            <Input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleAvatarChange}
+                            />
+                        </div>
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="email" className="text-right">
-                        Email
-                        </Label>
-                        <Input id="email" defaultValue={profile.email || ''} className="col-span-3" disabled />
-                    </div>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="enrollment" className="text-right">
-                        Enrollment
-                        </Label>
-                        <Input id="enrollment" defaultValue={profile.enrollment || ''} className="col-span-3" disabled />
-                    </div>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="department" className="text-right">
-                        Department
-                        </Label>
-                        <Input id="department" defaultValue={profile.department || ''} className="col-span-3" />
+                    <div className="grid gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="name">Name</Label>
+                            <Input id="name" value={editedName} onChange={(e) => setEditedName(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Email</Label>
+                            <Input id="email" defaultValue={profile.email || ''} disabled />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="enrollment">Enrollment</Label>
+                            <Input id="enrollment" defaultValue={profile.enrollment || ''} disabled />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="department">Department</Label>
+                            <Input id="department" value={editedDepartment} onChange={(e) => setEditedDepartment(e.target.value)} />
+                        </div>
                     </div>
                 </div>
                 <DialogFooter>
                     <DialogClose asChild>
-                        <Button type="submit">Save changes</Button>
+                        <Button type="button" variant="secondary">Cancel</Button>
+                    </DialogClose>
+                    <DialogClose asChild>
+                        <Button type="submit" onClick={handleSaveChanges}>Save changes</Button>
                     </DialogClose>
                 </DialogFooter>
             </DialogContent>
@@ -144,7 +216,7 @@ export default function ProfilePage() {
         <div className="flex flex-col md:flex-row items-start gap-8">
             <div className="flex flex-col items-center gap-4 w-full md:w-48">
                 <Avatar className="h-32 w-32 border-4 border-primary/20">
-                    <AvatarImage src={`https://avatar.vercel.sh/${profile.email}.png`} alt={profile.name || 'Student'} />
+                    <AvatarImage src={profile.avatar || `https://avatar.vercel.sh/${profile.email}.png`} alt={profile.name || 'Student'} />
                     <AvatarFallback className="text-4xl">{getInitials(profile.name)}</AvatarFallback>
                 </Avatar>
                 <div className="text-center">
@@ -170,3 +242,5 @@ export default function ProfilePage() {
     </Card>
   );
 }
+
+    
