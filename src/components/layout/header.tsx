@@ -3,7 +3,12 @@ import { PanelLeft, Library } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { UserNav } from './user-nav';
-import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from '../ui/sheet';
 import Sidebar from './sidebar';
 import { ThemeToggle } from './theme-toggle';
 
@@ -19,6 +24,7 @@ export default function Header() {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="sm:max-w-xs">
+            <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
             <nav className="grid gap-6 text-lg font-medium">
               <Link
                 href="#"
@@ -39,7 +45,7 @@ export default function Header() {
               >
                 Inventory
               </Link>
-               <Link
+              <Link
                 href="/dashboard/student/browse"
                 className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
               >
