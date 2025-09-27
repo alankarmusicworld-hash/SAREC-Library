@@ -1,4 +1,7 @@
 
+"use client";
+
+import { useState, useMemo } from 'react';
 import { books, Book } from '@/lib/data';
 import {
   Card,
@@ -26,12 +29,50 @@ import {
     TabsTrigger,
   } from '@/components/ui/tabs';
 
+// This function can be expanded to fetch books from an API
 async function getBooks(): Promise<Book[]> {
   return books;
 }
 
-export default async function BrowsePage() {
-  const allBooks = await getBooks();
+const Highlighted = ({ text, highlight }: { text: string; highlight: string }) => {
+  if (!highlight.trim()) {
+    return <span>{text}</span>;
+  }
+  const regex = new RegExp(`(${highlight})`, 'gi');
+  const parts = text.split(regex);
+  return (
+    <span>
+      {parts.map((part, i) =>
+        regex.test(part) ? (
+          <mark key={i} className="bg-primary/20 px-0 py-0 rounded-sm">
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      )}
+    </span>
+  );
+};
+
+
+export default function BrowsePage() {
+  const [allBooks, setAllBooks] = useState<Book[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useState(() => {
+    getBooks().then(setAllBooks);
+  });
+
+  const filteredBooks = useMemo(() => {
+    if (!searchQuery) return allBooks;
+    return allBooks.filter(
+      (book) =>
+        book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        book.isbn.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        book.author.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [searchQuery, allBooks]);
 
   return (
     <Card>
@@ -52,8 +93,10 @@ export default async function BrowsePage() {
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                        placeholder="Search by title, ISBN, category..."
-                        className="pl-10 h-10 w-64"
+                          placeholder="Search by title, ISBN, author..."
+                          className="pl-10 h-10 w-64"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
                     <Button variant="outline" className="gap-2 h-10">
@@ -75,16 +118,21 @@ export default async function BrowsePage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {allBooks.map((book, index) => (
+                  {filteredBooks.length > 0 ? (
+                    filteredBooks.map((book, index) => (
                     <TableRow key={book.id}>
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>
-                        <div className="font-medium">{book.title}</div>
+                        <div className="font-medium">
+                           <Highlighted text={book.title} highlight={searchQuery} />
+                        </div>
                         <div className="text-sm text-muted-foreground">
-                          {book.isbn}
+                           <Highlighted text={book.isbn} highlight={searchQuery} />
                         </div>
                       </TableCell>
-                      <TableCell>{book.author}</TableCell>
+                      <TableCell>
+                         <Highlighted text={book.author} highlight={searchQuery} />
+                      </TableCell>
                       <TableCell>
                         <Badge
                           variant={
@@ -107,7 +155,14 @@ export default async function BrowsePage() {
                         </Button>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ))
+                ) : (
+                    <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">
+                            No books found for "{searchQuery}".
+                        </TableCell>
+                    </TableRow>
+                )}
                 </TableBody>
               </Table>
             </div>
