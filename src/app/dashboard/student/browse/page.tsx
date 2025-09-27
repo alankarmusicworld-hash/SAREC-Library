@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { books, Book } from '@/lib/data';
 import {
   Card,
@@ -60,9 +60,9 @@ export default function BrowsePage() {
   const [allBooks, setAllBooks] = useState<Book[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useState(() => {
+  useEffect(() => {
     getBooks().then(setAllBooks);
-  });
+  }, []);
 
   const filteredBooks = useMemo(() => {
     if (!searchQuery) return allBooks;
