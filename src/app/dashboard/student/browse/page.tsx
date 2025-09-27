@@ -73,6 +73,11 @@ export default function BrowsePage() {
 
   useEffect(() => {
     getBooks().then(setAllBooks);
+    // Load reserved books from localStorage on component mount
+    const storedReservedBooks = localStorage.getItem('reservedBookIds');
+    if (storedReservedBooks) {
+      setReservedBookIds(JSON.parse(storedReservedBooks));
+    }
   }, []);
 
   const authors = useMemo(() => {
@@ -115,8 +120,9 @@ export default function BrowsePage() {
   }
 
   const handleReserve = (book: Book) => {
-    // In a real app, you would make an API call here.
-    setReservedBookIds(prev => [...prev, book.id]);
+    const updatedReservedIds = [...reservedBookIds, book.id];
+    setReservedBookIds(updatedReservedIds);
+    localStorage.setItem('reservedBookIds', JSON.stringify(updatedReservedIds));
     toast({
       title: 'Success!',
       description: `You have reserved "${book.title}".`,
