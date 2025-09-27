@@ -138,7 +138,11 @@ export function UserNav() {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <DropdownMenuItem disabled>
+            <DropdownMenuItem
+              onClick={() => router.push('/dashboard/student/profile')}
+              disabled={userRole !== 'student'}
+              className={userRole === 'student' ? 'cursor-pointer' : ''}
+            >
               <UserIcon className="mr-2 h-4 w-4" />
               <span>Profile</span>
             </DropdownMenuItem>
