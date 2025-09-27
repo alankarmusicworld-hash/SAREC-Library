@@ -196,8 +196,8 @@ export default function DashboardPage() {
               </Card>
             ))}
           </div>
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-            <div className="lg:col-span-3">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2">
               <Card>
                 <CardHeader>
                   <CardTitle>Recent Issues</CardTitle>
@@ -248,7 +248,7 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
             </div>
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-1">
               <Card>
                 <CardHeader>
                   <CardTitle>At a glance</CardTitle>
