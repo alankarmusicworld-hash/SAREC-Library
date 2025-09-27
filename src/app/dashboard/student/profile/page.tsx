@@ -45,7 +45,12 @@ const departments = [
   'General',
 ];
 const years = ['1st', '2nd', '3rd', '4th'];
-const semesters = Array.from({ length: 8 }, (_, i) => (i + 1).toString());
+const semesterOptions: Record<string, string[]> = {
+  '1st': ['1', '2'],
+  '2nd': ['3', '4'],
+  '3rd': ['5', '6'],
+  '4th': ['7', '8'],
+};
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
@@ -86,7 +91,15 @@ export default function ProfilePage() {
   };
   
   const handleSelectChange = (id: keyof StudentProfile, value: string) => {
-    setProfile(prev => prev ? { ...prev, [id]: value } : null);
+    setProfile(prev => {
+        if (!prev) return null;
+        const newProfile = { ...prev, [id]: value };
+        // If year is changed, reset semester
+        if (id === 'year') {
+            newProfile.semester = '';
+        }
+        return newProfile;
+    });
   };
 
   const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -94,7 +107,9 @@ export default function ProfilePage() {
       const file = e.target.files[0];
       const reader = new FileReader();
       reader.onloadend = () => {
-        handleSelectChange('avatar', reader.result as string);
+        if(profile) {
+            setProfile({ ...profile, avatar: reader.result as string});
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -118,6 +133,8 @@ export default function ProfilePage() {
       });
     }
   };
+
+  const availableSemesters = profile?.year ? semesterOptions[profile.year] : [];
 
   if (isLoading) {
     return (
@@ -208,12 +225,12 @@ export default function ProfilePage() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="semester">Semester</Label>
-                     <Select value={profile.semester} onValueChange={(value) => handleSelectChange('semester', value)}>
+                     <Select value={profile.semester} onValueChange={(value) => handleSelectChange('semester', value)} disabled={!profile.year}>
                         <SelectTrigger>
                             <SelectValue placeholder="Semester" />
                         </SelectTrigger>
                         <SelectContent>
-                            {semesters.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                            {availableSemesters.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>
@@ -255,5 +272,3 @@ export default function ProfilePage() {
     </Card>
   );
 }
-
-    

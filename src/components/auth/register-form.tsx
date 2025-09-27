@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,7 +41,13 @@ const departments = [
 ];
 
 const years = ['1st', '2nd', '3rd', '4th'];
-const semesters = Array.from({ length: 8 }, (_, i) => (i + 1).toString());
+
+const semesterOptions: Record<string, string[]> = {
+  '1st': ['1', '2'],
+  '2nd': ['3', '4'],
+  '3rd': ['5', '6'],
+  '4th': ['7', '8'],
+};
 
 const formSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -64,7 +70,7 @@ export function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -81,6 +87,13 @@ export function RegisterForm() {
   });
 
   const selectedYear = form.watch('year');
+  const availableSemesters = selectedYear ? semesterOptions[selectedYear] : [];
+
+  useEffect(() => {
+    // Reset semester when year changes
+    form.setValue('semester', '');
+  }, [selectedYear, form]);
+
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true);
@@ -266,14 +279,18 @@ export function RegisterForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Semester</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedYear}>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  disabled={!selectedYear}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select semester" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {semesters.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    {availableSemesters.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <FormMessage />
