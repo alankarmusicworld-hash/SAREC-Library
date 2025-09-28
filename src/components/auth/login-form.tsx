@@ -55,18 +55,6 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true);
     
-    // Hardcoded credentials check for admin
-    if (data.role === 'admin' && data.id === 'admin@sarec.com' && data.password === 'admin123') {
-        localStorage.setItem('userRole', 'admin');
-        localStorage.setItem('userEmail', 'admin@sarec.com');
-        localStorage.setItem('userName', 'Alice Admin');
-        localStorage.setItem('userId', '1');
-        toast({ title: 'Login Successful!', description: 'Redirecting to admin dashboard...' });
-        router.push('/dashboard');
-        setIsLoading(false);
-        return;
-    }
-    
     try {
       let emailToLogin = data.id;
 
@@ -82,12 +70,11 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
         
         const studentDoc = querySnapshot.docs[0];
         emailToLogin = studentDoc.data().email;
+        if (!emailToLogin) {
+            throw new Error("Email not found for the given Student ID.");
+        }
       }
       
-      if (!emailToLogin) {
-          throw new Error("Could not determine email for login.");
-      }
-
       // Step 1: Sign in with Firebase Auth using the email
       const userCredential = await signInWithEmailAndPassword(auth, emailToLogin, data.password);
       const user = userCredential.user;
@@ -138,8 +125,8 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
       
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-email') {
         description = 'Invalid credentials. Please check your ID/email and password.';
-      } else if (error.message === 'Student ID not found.') {
-        description = 'No student found with this College ID.';
+      } else if (error.message.includes("not found")) {
+        description = error.message;
       }
 
       toast({
