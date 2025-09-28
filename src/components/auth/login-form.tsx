@@ -54,7 +54,29 @@ export function LoginForm({ role, idLabel, idPlaceholder}: LoginFormProps) {
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    
+
+    // Mock authentication for librarian
+    if (data.role === 'librarian') {
+      if (data.id === 'librarian@sarec.com' && data.password === 'librarian123') {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('userRole', 'librarian');
+            localStorage.setItem('userEmail', 'bob@sarec.com');
+            localStorage.setItem('userName', 'Bob Librarian');
+            localStorage.setItem('userId', '2'); // Using static ID from data.ts
+        }
+        toast({ title: 'Login Successful!', description: 'Redirecting to dashboard...' });
+        router.push('/dashboard');
+      } else {
+        toast({
+            variant: 'destructive',
+            title: 'Login Error',
+            description: 'Invalid credentials. Please check your ID and password.',
+        });
+        setIsLoading(false);
+      }
+      return;
+    }
+
     try {
       let emailToLogin: string;
 
