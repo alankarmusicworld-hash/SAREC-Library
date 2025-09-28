@@ -31,11 +31,11 @@ const formSchema = z.object({
 
 interface LoginFormProps {
   role: 'admin' | 'librarian' | 'student';
-  idLabel?: string;
-  idPlaceholder?: string;
+  idLabel: string;
+  idPlaceholder: string;
 }
 
-export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@example.com'}: LoginFormProps) {
+export function LoginForm({ role, idLabel, idPlaceholder}: LoginFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(false);
@@ -140,12 +140,12 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
           name="id"
           render={({ field }) => (
             <FormItem className="relative">
-              <FormControl>
-                <Input placeholder={idPlaceholder} {...field} disabled={isLoading} />
-              </FormControl>
               <FormLabel>
                 {idLabel}
               </FormLabel>
+              <FormControl>
+                <Input placeholder={idPlaceholder} {...field} disabled={isLoading} />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -155,12 +155,12 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
           name="password"
           render={({ field }) => (
             <FormItem className="relative">
-              <FormControl>
-                <Input type="password" placeholder=" " {...field} disabled={isLoading}/>
-              </FormControl>
                <FormLabel>
                 Password
               </FormLabel>
+              <FormControl>
+                <Input type="password" placeholder=" " {...field} disabled={isLoading}/>
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

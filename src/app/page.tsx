@@ -1,62 +1,96 @@
 
-import Link from 'next/link';
-import { Library, Shield, BookUser, GraduationCap } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+'use client';
 
-export default function HomePage() {
+import { useState } from 'react';
+import { Library } from 'lucide-react';
+import Link from 'next/link';
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
+import { LoginForm } from '@/components/auth/login-form';
+import { Button } from '@/components/ui/button';
+
+type Role = 'student' | 'admin' | 'librarian';
+
+const roleConfig = {
+  student: {
+    title: 'Student Login',
+    description: 'Enter your student ID and password to continue.',
+    idLabel: 'Student ID',
+    idPlaceholder: 'e.g., STU1001',
+    showRegister: true,
+  },
+  librarian: {
+    title: 'Librarian Login',
+    description: 'Enter your email and password to continue.',
+    idLabel: 'Email',
+    idPlaceholder: 'librarian@sarec.com',
+    showRegister: false,
+  },
+  admin: {
+    title: 'Admin Login',
+    description: 'Enter your email and password to continue.',
+    idLabel: 'Email',
+    idPlaceholder: 'admin@sarec.com',
+    showRegister: false,
+  },
+};
+
+export default function LoginPage() {
+  const [activeTab, setActiveTab] = useState<Role>('student');
+
+  const config = roleConfig[activeTab];
+
   return (
-    <div className="min-h-screen w-full bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('/background.jpg')"}}>
-       <div className="absolute inset-0 bg-black/50"></div>
-       <header className="relative z-10 flex h-14 items-center gap-4 border-b border-white/20 bg-black/10 px-4 text-white backdrop-blur-md sm:px-6">
-         <Link href="/" className="flex items-center gap-2 font-semibold">
-          <Library className="h-6 w-6" />
-          <span>SAREC LIBRARY</span>
-        </Link>
-      </header>
-      <main className="relative z-10 flex flex-1 flex-col items-center justify-center p-4 text-center text-white">
-        <h1 className="mb-4 text-4xl font-bold tracking-tight md:text-6xl font-display">
-          Welcome to SAREC Library Portal
-        </h1>
-        <p className="max-w-2xl mx-auto mb-8 text-lg text-neutral-200">
-          Your gateway to knowledge. Choose your role to sign in and explore a world of books and resources.
-        </p>
-        <div className="grid w-full max-w-4xl grid-cols-1 gap-6 sm:grid-cols-3">
-          <Link href="/login/student">
-             <Card className="text-foreground transition-all hover:bg-white/90 dark:bg-neutral-800/80 dark:hover:bg-neutral-700/80 cursor-pointer h-full glass">
-                <CardHeader>
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        <GraduationCap className="h-8 w-8" />
-                    </div>
-                    <CardTitle>Student</CardTitle>
-                    <CardDescription>Browse, reserve, and manage your books.</CardDescription>
-                </CardHeader>
-             </Card>
-          </Link>
-          <Link href="/login/librarian">
-             <Card className="text-foreground transition-all hover:bg-white/90 dark:bg-neutral-800/80 dark:hover:bg-neutral-700/80 cursor-pointer h-full glass">
-                <CardHeader>
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-secondary/10 text-secondary">
-                        <BookUser className="h-8 w-8" />
-                    </div>
-                    <CardTitle>Librarian</CardTitle>
-                    <CardDescription>Manage inventory and book transactions.</CardDescription>
-                </CardHeader>
-             </Card>
-          </Link>
-          <Link href="/login/admin">
-             <Card className="text-foreground transition-all hover:bg-white/90 dark:bg-neutral-800/80 dark:hover:bg-neutral-700/80 cursor-pointer h-full glass">
-                <CardHeader>
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10 text-destructive">
-                        <Shield className="h-8 w-8" />
-                    </div>
-                    <CardTitle>Admin</CardTitle>
-                    <CardDescription>Oversee users, settings, and reports.</CardDescription>
-                </CardHeader>
-             </Card>
-          </Link>
+    <main className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
+      <div className="w-full max-w-md">
+        <div className="mb-4 flex justify-center items-center gap-2 text-foreground">
+            <Library className="h-7 w-7" />
+            <span className="text-xl font-semibold">SAREC Library Portal</span>
         </div>
-      </main>
-    </div>
+        <Card className="shadow-lg">
+          <CardHeader>
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Role)} className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="admin">Admin</TabsTrigger>
+                <TabsTrigger value="librarian">Librarian</TabsTrigger>
+                <TabsTrigger value="student">Student</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </CardHeader>
+          <CardContent>
+             <div className="text-center mb-6">
+                <CardTitle className="text-2xl font-bold">{config.title}</CardTitle>
+                <CardDescription>{config.description}</CardDescription>
+            </div>
+            <LoginForm
+              key={activeTab} // Add key to re-mount form on tab change
+              role={activeTab}
+              idLabel={config.idLabel}
+              idPlaceholder={config.idPlaceholder}
+            />
+            {config.showRegister && (
+                 <p className="mt-4 text-center text-sm text-muted-foreground">
+                    Don't have an account?{' '}
+                    <Button variant="link" asChild className="p-0 h-auto">
+                        <Link href="/register">Register</Link>
+                    </Button>
+                </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </main>
   );
 }
