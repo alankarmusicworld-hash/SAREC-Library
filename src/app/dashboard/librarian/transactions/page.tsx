@@ -15,9 +15,9 @@ export default function TransactionPage() {
     <div className="grid gap-6 lg:grid-cols-2">
       <Card>
         <CardHeader>
-          <CardTitle>Book Checkout</CardTitle>
+          <CardTitle>Book Issue</CardTitle>
           <CardDescription>
-            Process a book checkout for a user.
+            Process a book issue for a user.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -36,7 +36,7 @@ export default function TransactionPage() {
                 placeholder="Enter book ISBN"
               />
             </div>
-            <Button className="w-full">Check Out Book</Button>
+            <Button className="w-full">Issue Book</Button>
           </form>
         </CardContent>
       </Card>
