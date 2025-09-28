@@ -413,7 +413,7 @@ export default function InventoryManagementPage() {
           </div>
           <TabsContent value="all-books" className="mt-4">
             <DataTable 
-                columns={columns({ onBookUpdated, onBookDeleted })} 
+                columns={columns({ onBookUpdated: handleBookUpdated, onBookDeleted: handleBookDeleted })} 
                 data={filteredData} 
             />
           </TabsContent>
