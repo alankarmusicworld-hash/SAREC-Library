@@ -8,6 +8,8 @@ export type Book = {
   publisher: string;
   status: 'available' | 'checked-out';
   coverImageUrl: string;
+  category?: string;
+  copies?: string;
 };
 
 export type User = {
@@ -43,63 +45,63 @@ export type Fine = {
 export const books: Book[] = [
   {
     id: '1',
+    title: 'Electrical Machines Ist',
+    author: 'Ashfak Husen',
+    isbn: '81124932184567',
+    publicationDate: '2022-01-01',
+    publisher: 'Sarthak',
+    status: 'available',
+    coverImageUrl: 'https://picsum.photos/seed/book1/300/400',
+    category: 'Electrical',
+    copies: '7/8',
+  },
+  {
+    id: '2',
+    title: 'Digital Electronics',
+    author: 'Morris Mano',
+    isbn: '811249321890',
+    publicationDate: '2021-05-15',
+    publisher: 'Sarthak',
+    status: 'available',
+    coverImageUrl: 'https://picsum.photos/seed/book2/300/400',
+    category: 'Electronics',
+    copies: '20/20',
+  },
+  {
+    id: '3',
     title: 'The Great Gatsby',
     author: 'F. Scott Fitzgerald',
     isbn: '978-0743273565',
     publicationDate: '1925-04-10',
     publisher: "Scribner's",
     status: 'available',
-    coverImageUrl: 'https://picsum.photos/seed/book1/300/400',
+    coverImageUrl: 'https://picsum.photos/seed/book3/300/400',
+    category: 'Fiction',
+    copies: '5/5',
   },
   {
-    id: '2',
+    id: '4',
     title: 'To Kill a Mockingbird',
     author: 'Harper Lee',
     isbn: '978-0061120084',
     publicationDate: '1960-07-11',
     publisher: 'J. B. Lippincott & Co.',
     status: 'checked-out',
-    coverImageUrl: 'https://picsum.photos/seed/book2/300/400',
+    coverImageUrl: 'https://picsum.photos/seed/book4/300/400',
+    category: 'Classic',
+    copies: '0/2',
   },
   {
-    id: '3',
+    id: '5',
     title: '1984',
     author: 'George Orwell',
     isbn: '978-0451524935',
     publicationDate: '1949-06-08',
     publisher: 'Secker & Warburg',
     status: 'available',
-    coverImageUrl: 'https://picsum.photos/seed/book3/300/400',
-  },
-  {
-    id: '4',
-    title: 'Pride and Prejudice',
-    author: 'Jane Austen',
-    isbn: '978-1503290563',
-    publicationDate: '1813-01-28',
-    publisher: 'T. Egerton, Whitehall',
-    status: 'available',
-    coverImageUrl: 'https://picsum.photos/seed/book4/300/400',
-  },
-  {
-    id: '5',
-    title: 'The Hobbit',
-    author: 'J.R.R. Tolkien',
-    isbn: '978-0345339683',
-    publicationDate: '1937-09-21',
-    publisher: 'George Allen & Unwin',
-    status: 'checked-out',
     coverImageUrl: 'https://picsum.photos/seed/book5/300/400',
-  },
-  {
-    id: '6',
-    title: 'Brave New World',
-    author: 'Aldous Huxley',
-    isbn: '978-0060850524',
-    publicationDate: '1932-08-30',
-    publisher: 'Chatto & Windus',
-    status: 'available',
-    coverImageUrl: 'https://picsum.photos/seed/book6/300/400',
+    category: 'Dystopian',
+    copies: '3/3',
   },
 ];
 
