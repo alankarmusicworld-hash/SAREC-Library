@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import {
-  PanelLeft,
+  Menu,
   Library,
   LayoutGrid,
   BookCopy,
@@ -113,7 +113,7 @@ export default function Header() {
         <Sheet>
           <SheetTrigger asChild>
             <Button size="icon" variant="outline">
-              <PanelLeft className="h-5 w-5" />
+              <Menu className="h-5 w-5" />
               <span className="sr-only">Toggle Menu</span>
             </Button>
           </SheetTrigger>
