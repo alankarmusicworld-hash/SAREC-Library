@@ -45,6 +45,7 @@ export default function InventoryManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAuthor, setSelectedAuthor] = useState('');
   const [selectedPublisher, setSelectedPublisher] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const { toast } = useToast();
 
   const authors = useMemo(() => {
@@ -56,6 +57,12 @@ export default function InventoryManagementPage() {
     const publisherSet = new Set(data.map(book => book.publisher));
     return Array.from(publisherSet).sort();
   }, [data]);
+  
+  const categories = useMemo(() => {
+    const categorySet = new Set(data.map(book => book.category).filter(Boolean) as string[]);
+    return Array.from(categorySet).sort();
+  }, [data]);
+
 
   const filteredData = useMemo(() => {
     let filtered = data;
@@ -77,9 +84,13 @@ export default function InventoryManagementPage() {
     if (selectedPublisher) {
       filtered = filtered.filter(book => book.publisher === selectedPublisher);
     }
+    
+    if (selectedCategory) {
+      filtered = filtered.filter(book => book.category === selectedCategory);
+    }
 
     return filtered;
-  }, [data, searchQuery, selectedAuthor, selectedPublisher]);
+  }, [data, searchQuery, selectedAuthor, selectedPublisher, selectedCategory]);
   
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -158,6 +169,7 @@ export default function InventoryManagementPage() {
   const clearFilters = () => {
     setSelectedAuthor('');
     setSelectedPublisher('');
+    setSelectedCategory('');
   };
 
 
@@ -266,7 +278,7 @@ export default function InventoryManagementPage() {
                         <div className="space-y-2">
                             <h4 className="font-medium leading-none">Filter Books</h4>
                             <p className="text-sm text-muted-foreground">
-                                Refine by author or publication.
+                                Refine by author, publication or category.
                             </p>
                         </div>
                         <div className="grid gap-2">
@@ -292,6 +304,19 @@ export default function InventoryManagementPage() {
                                     <SelectContent>
                                         {publishers.map(publisher => (
                                             <SelectItem key={publisher} value={publisher}>{publisher}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid grid-cols-3 items-center gap-4">
+                                <Label htmlFor="category">Category</Label>
+                                <Select onValueChange={setSelectedCategory} value={selectedCategory}>
+                                    <SelectTrigger className="col-span-2 h-8">
+                                        <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {categories.map(category => (
+                                            <SelectItem key={category} value={category}>{category}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
