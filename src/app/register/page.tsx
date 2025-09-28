@@ -1,3 +1,4 @@
+
 import { Library } from 'lucide-react';
 import Link from 'next/link';
 
@@ -12,17 +13,11 @@ import { RegisterForm } from '@/components/auth/register-form';
 
 export default function RegisterPage() {
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
-       <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-         <Link href="/" className="flex items-center gap-2 font-semibold">
-          <Library className="h-6 w-6 text-primary" />
-          <span>SAREC Library</span>
-        </Link>
-      </header>
-      <main className="flex flex-1 items-center justify-center p-4">
-        <Card className="w-full max-w-2xl">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
+      <div className="w-full max-w-2xl">
+        <Card>
           <CardHeader>
-            <CardTitle>Create an account</CardTitle>
+            <CardTitle>Create a Student Account</CardTitle>
             <CardDescription>
               Enter your information to create a new student account.
             </CardDescription>
@@ -31,13 +26,16 @@ export default function RegisterPage() {
             <RegisterForm />
             <div className="mt-4 text-center text-sm">
               Already have an account?{' '}
-              <Link href="/" className="underline">
+              <Link href="/login/student" className="underline">
                 Sign in
               </Link>
             </div>
+             <div className="mt-2 text-center text-sm">
+                <Link href="/" className="underline">Back to Home</Link>
+             </div>
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }

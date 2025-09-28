@@ -1,57 +1,60 @@
 
 import Link from 'next/link';
-import { Library } from 'lucide-react';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
-import { LoginForm } from '@/components/auth/login-form';
+import { Library, Shield, BookUser, GraduationCap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-export default function LoginPage() {
+export default function HomePage() {
   return (
     <div className="min-h-screen w-full bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('/background.jpg')"}}>
-       <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-white/20 bg-black/10 px-4 backdrop-blur-md sm:px-6">
-         <Link href="/" className="flex items-center gap-2 font-semibold text-foreground">
+       <div className="absolute inset-0 bg-black/50"></div>
+       <header className="relative z-10 flex h-14 items-center gap-4 border-b border-white/20 bg-black/10 px-4 text-white backdrop-blur-md sm:px-6">
+         <Link href="/" className="flex items-center gap-2 font-semibold">
           <Library className="h-6 w-6" />
           <span>SAREC LIBRARY</span>
         </Link>
       </header>
-      <main className="flex flex-1 items-center justify-center p-4">
-        <div className="w-full max-w-md">
-            <div className="flex flex-col items-center justify-center mb-6">
-                <div className="p-3 rounded-2xl bg-white/80 dark:bg-neutral-900/80 shadow-soft mb-4">
-                     <Library className="h-8 w-8 text-primary" />
-                </div>
-            </div>
-            <Tabs defaultValue="student">
-                <div className="p-8 rounded-3xl bg-white/70 dark:bg-neutral-800/60 backdrop-blur-xl shadow-glass border border-white/40 dark:border-white/10">
-                    <div className="flex flex-col items-center justify-center mb-6">
-                        <h1 className="font-display text-3xl font-semibold">Sign in to <span className="text-primary">SAREC Library</span></h1>
+      <main className="relative z-10 flex flex-1 flex-col items-center justify-center p-4 text-center text-white">
+        <h1 className="mb-4 text-4xl font-bold tracking-tight md:text-6xl font-display">
+          Welcome to SAREC Library Portal
+        </h1>
+        <p className="max-w-2xl mx-auto mb-8 text-lg text-neutral-200">
+          Your gateway to knowledge. Choose your role to sign in and explore a world of books and resources.
+        </p>
+        <div className="grid w-full max-w-4xl grid-cols-1 gap-6 sm:grid-cols-3">
+          <Link href="/login/student">
+             <Card className="text-foreground transition-all hover:bg-white/90 dark:bg-neutral-800/80 dark:hover:bg-neutral-700/80 cursor-pointer h-full glass">
+                <CardHeader>
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <GraduationCap className="h-8 w-8" />
                     </div>
-                    <TabsList className="grid w-full grid-cols-3 mb-6">
-                        <TabsTrigger value="admin">Admin</TabsTrigger>
-                        <TabsTrigger value="librarian">Librarian</TabsTrigger>
-                        <TabsTrigger value="student">Student</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="admin">
-                        <LoginForm role="admin" idLabel="Email" idPlaceholder="admin@example.com" />
-                    </TabsContent>
-                    <TabsContent value="librarian">
-                        <LoginForm role="librarian" idLabel="Email" idPlaceholder="librarian@example.com" />
-                    </TabsContent>
-                    <TabsContent value="student">
-                        <LoginForm role="student" idLabel="College ID" idPlaceholder="Enter your college ID" />
-                        <p className="text-sm text-center mt-6 text-neutral-600 dark:text-neutral-400">
-                            No account?{' '}
-                            <Link className="text-primary hover:underline" href="/register">
-                                Register
-                            </Link>
-                        </p>
-                    </TabsContent>
-                </div>
-            </Tabs>
+                    <CardTitle>Student</CardTitle>
+                    <CardDescription>Browse, reserve, and manage your books.</CardDescription>
+                </CardHeader>
+             </Card>
+          </Link>
+          <Link href="/login/librarian">
+             <Card className="text-foreground transition-all hover:bg-white/90 dark:bg-neutral-800/80 dark:hover:bg-neutral-700/80 cursor-pointer h-full glass">
+                <CardHeader>
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-secondary/10 text-secondary">
+                        <BookUser className="h-8 w-8" />
+                    </div>
+                    <CardTitle>Librarian</CardTitle>
+                    <CardDescription>Manage inventory and book transactions.</CardDescription>
+                </CardHeader>
+             </Card>
+          </Link>
+          <Link href="/login/admin">
+             <Card className="text-foreground transition-all hover:bg-white/90 dark:bg-neutral-800/80 dark:hover:bg-neutral-700/80 cursor-pointer h-full glass">
+                <CardHeader>
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+                        <Shield className="h-8 w-8" />
+                    </div>
+                    <CardTitle>Admin</CardTitle>
+                    <CardDescription>Oversee users, settings, and reports.</CardDescription>
+                </CardHeader>
+             </Card>
+          </Link>
         </div>
       </main>
     </div>
