@@ -54,6 +54,31 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true);
+    
+    // Hardcoded credentials check for admin and librarian
+    if (data.role === 'admin' && data.id === 'admin@sarec.com' && data.password === 'admin123') {
+        localStorage.setItem('userRole', 'admin');
+        localStorage.setItem('userEmail', 'admin@sarec.com');
+        localStorage.setItem('userName', 'Alice Admin');
+        localStorage.setItem('userId', '1');
+        toast({ title: 'Login Successful!', description: 'Redirecting to admin dashboard...' });
+        router.push('/dashboard');
+        setIsLoading(false);
+        return;
+    }
+
+    if (data.role === 'librarian' && data.id === 'bob@sarec.com' && data.password === 'librarian123') {
+        localStorage.setItem('userRole', 'librarian');
+        localStorage.setItem('userEmail', 'bob@sarec.com');
+        localStorage.setItem('userName', 'Bob Librarian');
+        localStorage.setItem('userId', '2');
+        toast({ title: 'Login Successful!', description: 'Redirecting to librarian dashboard...' });
+        router.push('/dashboard');
+        setIsLoading(false);
+        return;
+    }
+
+
     let emailToLogin = data.id;
 
     try {
