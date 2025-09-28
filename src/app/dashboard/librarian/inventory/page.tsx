@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, ChangeEvent } from 'react';
+import { useState, ChangeEvent, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { books, Book } from '@/lib/data';
 import { DataTable } from './components/data-table';
@@ -34,19 +34,53 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { AddBookForm } from './components/add-book-form';
-
-async function getBooks(): Promise<Book[]> {
-  // In a real app, you would fetch data from an API.
-  return books;
-}
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function InventoryManagementPage() {
   const [data, setData] = useState<Book[]>(books);
   const [isImporting, setIsImporting] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isAddBookOpen, setAddBookOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedAuthor, setSelectedAuthor] = useState('');
+  const [selectedPublisher, setSelectedPublisher] = useState('');
   const { toast } = useToast();
 
+  const authors = useMemo(() => {
+    const authorSet = new Set(data.map(book => book.author));
+    return Array.from(authorSet).sort();
+  }, [data]);
+
+  const publishers = useMemo(() => {
+    const publisherSet = new Set(data.map(book => book.publisher));
+    return Array.from(publisherSet).sort();
+  }, [data]);
+
+  const filteredData = useMemo(() => {
+    let filtered = data;
+
+    if (searchQuery) {
+      const lowercasedQuery = searchQuery.toLowerCase();
+      filtered = filtered.filter(book =>
+        book.title.toLowerCase().includes(lowercasedQuery) ||
+        book.isbn.toLowerCase().includes(lowercasedQuery) ||
+        book.category?.toLowerCase().includes(lowercasedQuery) ||
+        book.author.toLowerCase().includes(lowercasedQuery)
+      );
+    }
+
+    if (selectedAuthor) {
+      filtered = filtered.filter(book => book.author === selectedAuthor);
+    }
+
+    if (selectedPublisher) {
+      filtered = filtered.filter(book => book.publisher === selectedPublisher);
+    }
+
+    return filtered;
+  }, [data, searchQuery, selectedAuthor, selectedPublisher]);
+  
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -86,8 +120,6 @@ export default function InventoryManagementPage() {
                 coverImageUrl: 'https://picsum.photos/seed/newbook/300/400',
             }));
 
-            // In a real app, you would send this to your API
-            console.log('Imported Books:', newBooks);
             setData(prev => [...prev, ...newBooks]);
 
             toast({
@@ -104,7 +136,6 @@ export default function InventoryManagementPage() {
         } finally {
             setIsImporting(false);
             setImportFile(null);
-            // Close the dialog by resetting state if you control it
         }
     };
     reader.readAsBinaryString(importFile);
@@ -122,6 +153,11 @@ export default function InventoryManagementPage() {
 
   const handleBookAdded = (newBook: Book) => {
     setData(prev => [newBook, ...prev]);
+  };
+  
+  const clearFilters = () => {
+    setSelectedAuthor('');
+    setSelectedPublisher('');
   };
 
 
@@ -210,20 +246,65 @@ export default function InventoryManagementPage() {
             <Input
               placeholder="Search by title, ISBN, category..."
               className="max-w-sm"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
             <div className="flex items-center gap-2">
               <Button variant="outline">
                 <ScanLine className="mr-2 h-4 w-4" />
                 Scan
               </Button>
-              <Button variant="outline">
-                <Filter className="mr-2 h-4 w-4" />
-                Filter
-              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                    <Button variant="outline">
+                        <Filter className="mr-2 h-4 w-4" />
+                        Filter
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80" align="end">
+                    <div className="grid gap-4">
+                        <div className="space-y-2">
+                            <h4 className="font-medium leading-none">Filter Books</h4>
+                            <p className="text-sm text-muted-foreground">
+                                Refine by author or publication.
+                            </p>
+                        </div>
+                        <div className="grid gap-2">
+                            <div className="grid grid-cols-3 items-center gap-4">
+                                <Label htmlFor="author">Author</Label>
+                                <Select onValueChange={setSelectedAuthor} value={selectedAuthor}>
+                                    <SelectTrigger className="col-span-2 h-8">
+                                        <SelectValue placeholder="Select author" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {authors.map(author => (
+                                            <SelectItem key={author} value={author}>{author}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid grid-cols-3 items-center gap-4">
+                                <Label htmlFor="publisher">Publication</Label>
+                                <Select onValueChange={setSelectedPublisher} value={selectedPublisher}>
+                                    <SelectTrigger className="col-span-2 h-8">
+                                        <SelectValue placeholder="Select publication" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {publishers.map(publisher => (
+                                            <SelectItem key={publisher} value={publisher}>{publisher}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <Button variant="ghost" onClick={clearFilters}>Clear Filters</Button>
+                    </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
           <TabsContent value="all-books" className="mt-4">
-            <DataTable columns={columns} data={data} />
+            <DataTable columns={columns} data={filteredData} />
           </TabsContent>
           <TabsContent value="by-department" className="mt-4">
             <div className="flex flex-col items-center justify-center gap-4 text-center h-64 rounded-md border border-dashed">
