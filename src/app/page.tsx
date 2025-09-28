@@ -35,13 +35,13 @@ export default function LoginPage() {
                         <TabsTrigger value="student">Student</TabsTrigger>
                     </TabsList>
                     <TabsContent value="admin">
-                        <LoginForm role="admin" />
+                        <LoginForm role="admin" idLabel="Email" idPlaceholder="admin@example.com" />
                     </TabsContent>
                     <TabsContent value="librarian">
-                        <LoginForm role="librarian" />
+                        <LoginForm role="librarian" idLabel="Email" idPlaceholder="librarian@example.com" />
                     </TabsContent>
                     <TabsContent value="student">
-                        <LoginForm role="student" idLabel="Student ID" idPlaceholder="STU1001" />
+                        <LoginForm role="student" idLabel="Email" idPlaceholder="student@example.com" />
                         <p className="text-sm text-center mt-6 text-neutral-600 dark:text-neutral-400">
                             No account?{' '}
                             <Link className="text-primary hover:underline" href="/register">

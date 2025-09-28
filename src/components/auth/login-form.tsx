@@ -24,7 +24,7 @@ import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firesto
 import { signInWithEmailAndPassword } from 'firebase/auth';
 
 const formSchema = z.object({
-  id: z.string().min(1, { message: 'Please enter a valid ID.' }),
+  id: z.string().email({ message: 'Please enter a valid email.' }),
   password: z.string().min(1, { message: 'Password is required.' }),
   role: z.enum(['admin', 'librarian', 'student']),
 });
@@ -67,25 +67,9 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
         return;
     }
 
-    let emailToLogin = data.id;
-
     try {
-      // If the user is a student, we need to find their email from their enrollment number (ID)
-      if (data.role === 'student') {
-        const usersRef = collection(db, "users");
-        const q = query(usersRef, where("enrollmentNumber", "==", data.id));
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-          throw new Error("Student ID not found.");
-        }
-        
-        const studentData = querySnapshot.docs[0].data();
-        emailToLogin = studentData.email;
-      }
-
       // Step 1: Sign in with Firebase Auth using the email
-      const userCredential = await signInWithEmailAndPassword(auth, emailToLogin, data.password);
+      const userCredential = await signInWithEmailAndPassword(auth, data.id, data.password);
       const user = userCredential.user;
 
       // Step 2: Get user's profile from Firestore to check their role
@@ -132,10 +116,8 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
       console.error("Login Error: ", error);
       let description = 'An error occurred while trying to log in.';
       
-      if (error.message === 'Student ID not found.') {
-          description = 'Invalid Student ID. Please check and try again.';
-      } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-email') {
-        description = 'Invalid credentials. Please check your ID and password.';
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-email') {
+        description = 'Invalid credentials. Please check your email and password.';
       }
 
       toast({
