@@ -10,6 +10,9 @@ export type Book = {
   coverImageUrl: string;
   category?: string;
   copies?: string;
+  department?: string;
+  year?: string;
+  semester?: string;
 };
 
 export type User = {
