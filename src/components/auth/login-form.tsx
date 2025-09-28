@@ -56,9 +56,8 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
     setIsLoading(true);
     
     try {
-      let emailToLogin = data.id;
+      let emailToLogin: string;
 
-      // If student, get email from enrollment number
       if (data.role === 'student') {
         const usersRef = collection(db, 'users');
         const q = query(usersRef, where('enrollmentNumber', '==', data.id));
@@ -70,16 +69,13 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
         
         const studentDoc = querySnapshot.docs[0];
         emailToLogin = studentDoc.data().email;
-        if (!emailToLogin) {
-            throw new Error("Email not found for the given Student ID.");
-        }
+      } else {
+        emailToLogin = data.id;
       }
       
-      // Step 1: Sign in with Firebase Auth using the email
       const userCredential = await signInWithEmailAndPassword(auth, emailToLogin, data.password);
       const user = userCredential.user;
 
-      // Step 2: Get user's profile from Firestore to check their role
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
@@ -89,7 +85,6 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
       
       const userData = userDoc.data();
 
-      // Step 3: Check if the user's role matches the login form's role
       if (userData.role !== data.role) {
         await auth.signOut();
         toast({
@@ -101,14 +96,12 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
         return;
       }
       
-      // Step 4: Role matches, proceed with login
       if (typeof window !== 'undefined') {
         localStorage.setItem('userRole', userData.role);
         localStorage.setItem('userEmail', userData.email);
         localStorage.setItem('userName', userData.name);
         localStorage.setItem('userId', user.uid);
 
-        // Store additional student data
         if (userData.role === 'student') {
             localStorage.setItem('userEnrollment', userData.enrollmentNumber);
             localStorage.setItem('userDepartment', userData.department);
@@ -124,9 +117,9 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
       let description = 'An error occurred while trying to log in.';
       
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-email') {
-        description = 'Invalid credentials. Please check your ID/email and password.';
-      } else if (error.message.includes("not found")) {
-        description = error.message;
+        description = 'Invalid credentials. Please check your ID and password.';
+      } else if (error.message.includes("Student ID not found")) {
+        description = "Student ID not found. Please check your College ID and try again.";
       }
 
       toast({
