@@ -24,7 +24,7 @@ import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firesto
 import { signInWithEmailAndPassword } from 'firebase/auth';
 
 const formSchema = z.object({
-  id: z.string().email({ message: 'Please enter a valid email.' }),
+  id: z.string().min(1, { message: 'This field is required.' }),
   password: z.string().min(1, { message: 'Password is required.' }),
   role: z.enum(['admin', 'librarian', 'student']),
 });
@@ -66,10 +66,30 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
         setIsLoading(false);
         return;
     }
-
+    
     try {
+      let emailToLogin = data.id;
+
+      // If student, get email from enrollment number
+      if (data.role === 'student') {
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('enrollmentNumber', '==', data.id));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+          throw new Error("Student ID not found.");
+        }
+        
+        const studentDoc = querySnapshot.docs[0];
+        emailToLogin = studentDoc.data().email;
+      }
+      
+      if (!emailToLogin) {
+          throw new Error("Could not determine email for login.");
+      }
+
       // Step 1: Sign in with Firebase Auth using the email
-      const userCredential = await signInWithEmailAndPassword(auth, data.id, data.password);
+      const userCredential = await signInWithEmailAndPassword(auth, emailToLogin, data.password);
       const user = userCredential.user;
 
       // Step 2: Get user's profile from Firestore to check their role
@@ -117,7 +137,9 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
       let description = 'An error occurred while trying to log in.';
       
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-email') {
-        description = 'Invalid credentials. Please check your email and password.';
+        description = 'Invalid credentials. Please check your ID/email and password.';
+      } else if (error.message === 'Student ID not found.') {
+        description = 'No student found with this College ID.';
       }
 
       toast({

@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { Library } from 'lucide-react';
 import {
@@ -41,7 +42,7 @@ export default function LoginPage() {
                         <LoginForm role="librarian" idLabel="Email" idPlaceholder="librarian@example.com" />
                     </TabsContent>
                     <TabsContent value="student">
-                        <LoginForm role="student" idLabel="Email" idPlaceholder="student@example.com" />
+                        <LoginForm role="student" idLabel="College ID" idPlaceholder="Enter your college ID" />
                         <p className="text-sm text-center mt-6 text-neutral-600 dark:text-neutral-400">
                             No account?{' '}
                             <Link className="text-primary hover:underline" href="/register">
