@@ -123,7 +123,8 @@ export default function InventoryManagementPage() {
             const worksheet = workbook.Sheets[sheetName];
             const jsonData = XLSX.utils.sheet_to_json<any>(worksheet);
 
-            const newBooks: Book[] = jsonData.map((row: any) => ({
+            const newBooks: Book[] = jsonData.map((row: any, index: number) => ({
+                id: `imported-${Date.now()}-${index}`,
                 title: row['Book Title'],
                 author: row['Author'],
                 publisher: row['Publication'],
@@ -132,7 +133,7 @@ export default function InventoryManagementPage() {
                 copies: row['Copies'],
                 status: 'available',
                 publicationDate: new Date().toISOString().split('T')[0],
-                coverImageUrl: 'https://picsum.photos/seed/newbook/300/400',
+                coverImageUrl: `https://picsum.photos/seed/${row['ISBN'] || `new${index}`}/300/400`,
             }));
 
             setData(prev => [...prev, ...newBooks]);
@@ -168,6 +169,14 @@ export default function InventoryManagementPage() {
 
   const handleBookAdded = (newBook: Book) => {
     setData(prev => [newBook, ...prev]);
+  };
+
+  const handleBookUpdated = (updatedBook: Book) => {
+    setData(prev => prev.map(book => book.id === updatedBook.id ? updatedBook : book));
+  };
+
+  const handleBookDeleted = (bookId: string) => {
+    setData(prev => prev.filter(book => book.id !== bookId));
   };
   
   const clearFilters = () => {
@@ -403,7 +412,10 @@ export default function InventoryManagementPage() {
             </div>
           </div>
           <TabsContent value="all-books" className="mt-4">
-            <DataTable columns={columns} data={filteredData} />
+            <DataTable 
+                columns={columns({ onBookUpdated, onBookDeleted })} 
+                data={filteredData} 
+            />
           </TabsContent>
           <TabsContent value="by-department" className="mt-4">
             <div className="flex flex-col items-center justify-center gap-4 text-center h-64 rounded-md border border-dashed">

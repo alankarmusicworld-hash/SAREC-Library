@@ -6,7 +6,12 @@ import { Book } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { CellAction } from './cell-action';
 
-export const columns: ColumnDef<Book>[] = [
+type ColumnsProps = {
+  onBookUpdated: (updatedBook: Book) => void;
+  onBookDeleted: (bookId: string) => void;
+};
+
+export const columns = ({ onBookUpdated, onBookDeleted }: ColumnsProps): ColumnDef<Book>[] => [
   {
     accessorKey: 'title',
     header: 'Book Title',
@@ -20,7 +25,7 @@ export const columns: ColumnDef<Book>[] = [
     accessorKey: 'author',
     header: 'Author',
   },
-    {
+  {
     accessorKey: 'publisher',
     header: 'Publication',
   },
@@ -49,6 +54,12 @@ export const columns: ColumnDef<Book>[] = [
   {
     id: 'actions',
     header: 'Actions',
-    cell: ({ row }) => <CellAction data={row.original} />,
+    cell: ({ row }) => (
+      <CellAction
+        data={row.original}
+        onBookUpdated={onBookUpdated}
+        onBookDeleted={onBookDeleted}
+      />
+    ),
   },
 ];
