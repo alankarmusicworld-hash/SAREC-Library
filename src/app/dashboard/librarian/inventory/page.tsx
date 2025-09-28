@@ -33,6 +33,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
+import { AddBookForm } from './components/add-book-form';
 
 async function getBooks(): Promise<Book[]> {
   // In a real app, you would fetch data from an API.
@@ -43,6 +44,7 @@ export default function InventoryManagementPage() {
   const [data, setData] = useState<Book[]>(books);
   const [isImporting, setIsImporting] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [isAddBookOpen, setAddBookOpen] = useState(false);
   const { toast } = useToast();
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -118,6 +120,10 @@ export default function InventoryManagementPage() {
     XLSX.writeFile(workbook, "book_import_template.xlsx");
   };
 
+  const handleBookAdded = (newBook: Book) => {
+    setData(prev => [newBook, ...prev]);
+  };
+
 
   return (
     <Card>
@@ -181,10 +187,23 @@ export default function InventoryManagementPage() {
                     </DialogFooter>
                 </DialogContent>
               </Dialog>
-              <Button>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add New Book
-              </Button>
+              <Dialog open={isAddBookOpen} onOpenChange={setAddBookOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add New Book
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                        <DialogTitle>Add a New Book</DialogTitle>
+                        <DialogDescription>
+                            Fill out the form below to add a new book to the library catalog.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <AddBookForm onBookAdded={handleBookAdded} setOpen={setAddBookOpen} />
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
           <div className="mt-4 flex items-center justify-between gap-4">
