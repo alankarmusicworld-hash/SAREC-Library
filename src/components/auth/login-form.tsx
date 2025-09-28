@@ -146,7 +146,7 @@ export function LoginForm({ role, idLabel = 'Email', idPlaceholder = 'user@examp
       
       if (error.message === 'Student ID not found.') {
           description = 'Invalid Student ID. Please check and try again.';
-      } else if (error.code === 'auth/invalid-credential') {
+      } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-email') {
         description = 'Invalid credentials. Please check your ID and password.';
       }
 
