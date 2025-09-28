@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, ChangeEvent, useMemo } from 'react';
+import { useState, ChangeEvent, useMemo, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { books, Book } from '@/lib/data';
 import { DataTable } from './components/data-table';
@@ -36,12 +36,16 @@ import { Label } from '@/components/ui/label';
 import { AddBookForm } from './components/add-book-form';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function InventoryManagementPage() {
   const [data, setData] = useState<Book[]>(books);
   const [isImporting, setIsImporting] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isAddBookOpen, setAddBookOpen] = useState(false);
+  const [isScanDialogOpen, setScanDialogOpen] = useState(false);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAuthor, setSelectedAuthor] = useState('');
   const [selectedPublisher, setSelectedPublisher] = useState('');
@@ -171,6 +175,40 @@ export default function InventoryManagementPage() {
     setSelectedPublisher('');
     setSelectedCategory('');
   };
+  
+    useEffect(() => {
+    if (isScanDialogOpen) {
+      const getCameraPermission = async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+          setHasCameraPermission(true);
+
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (error) {
+          console.error('Error accessing camera:', error);
+          setHasCameraPermission(false);
+          toast({
+            variant: 'destructive',
+            title: 'Camera Access Denied',
+            description: 'Please enable camera permissions in your browser settings to use this feature.',
+          });
+        }
+      };
+
+      getCameraPermission();
+      
+      // Cleanup function to stop video stream
+      return () => {
+          if (videoRef.current && videoRef.current.srcObject) {
+              const stream = videoRef.current.srcObject as MediaStream;
+              stream.getTracks().forEach(track => track.stop());
+          }
+      }
+    }
+  }, [isScanDialogOpen, toast]);
+
 
 
   return (
@@ -262,10 +300,46 @@ export default function InventoryManagementPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             <div className="flex items-center gap-2">
-              <Button variant="outline">
-                <ScanLine className="mr-2 h-4 w-4" />
-                Scan
-              </Button>
+               <Dialog open={isScanDialogOpen} onOpenChange={setScanDialogOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="outline">
+                        <ScanLine className="mr-2 h-4 w-4" />
+                        Scan
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Scan Book ISBN</DialogTitle>
+                        <DialogDescription>
+                           Point the camera at the book's QR or barcode to automatically fill in the ISBN.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="my-4">
+                        <div className="relative aspect-video bg-muted rounded-md overflow-hidden border">
+                             <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
+                             <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                 <div className="w-64 h-32 border-2 border-dashed border-white/80 rounded-lg"/>
+                             </div>
+                        </div>
+                         {hasCameraPermission === false && (
+                            <Alert variant="destructive" className="mt-4">
+                                <AlertTitle>Camera Access Required</AlertTitle>
+                                <AlertDescription>
+                                Please allow camera access in your browser to use this feature.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="scanned-isbn">Scanned ISBN</Label>
+                        <Input id="scanned-isbn" placeholder="ISBN will appear here" />
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="secondary" onClick={() => setScanDialogOpen(false)}>Cancel</Button>
+                        <Button type="button">Find Book</Button>
+                    </DialogFooter>
+                </DialogContent>
+              </Dialog>
               <Popover>
                 <PopoverTrigger asChild>
                     <Button variant="outline">
