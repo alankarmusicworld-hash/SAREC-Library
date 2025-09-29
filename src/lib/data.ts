@@ -20,6 +20,12 @@ export type User = {
   name: string;
   email: string;
   role: 'admin' | 'librarian' | 'student';
+  avatar?: string;
+  enrollment?: string;
+  department?: string;
+  year?: number;
+  semester?: number;
+  booksIssued?: number;
 };
 
 export type BorrowingHistory = {
@@ -109,10 +115,66 @@ export const books: Book[] = [
 ];
 
 export const users: User[] = [
-  { id: '1', name: 'Alice Admin', email: 'alice@sarec.com', role: 'admin' },
-  { id: '2', name: 'Bob Librarian', email: 'bob@sarec.com', role: 'librarian' },
-  { id: '3', name: 'Charlie Student', email: 'charlie@sarec.com', role: 'student' },
-  { id: '4', name: 'Diana Student', email: 'diana@sarec.com', role: 'student' },
+  { 
+    id: '1', 
+    name: 'Alice Admin', 
+    email: 'alice@sarec.com', 
+    role: 'admin', 
+    avatar: 'https://i.pravatar.cc/40?u=alice@sarec.com', 
+    enrollment: 'N/A', 
+    department: 'Administration',
+    year: undefined,
+    semester: undefined,
+    booksIssued: 0
+  },
+  { 
+    id: '2', 
+    name: 'Bob Librarian', 
+    email: 'bob@sarec.com', 
+    role: 'librarian', 
+    avatar: 'https://i.pravatar.cc/40?u=bob@sarec.com',
+    enrollment: 'N/A',
+    department: 'Library',
+    year: undefined,
+    semester: undefined,
+    booksIssued: 0
+  },
+  { 
+    id: '3', 
+    name: 'Alankar Kushwaha', 
+    email: 'alankar@sarec.com', 
+    role: 'student',
+    avatar: '',
+    enrollment: '2412150209001',
+    department: 'Electrical Engineering',
+    year: 3,
+    semester: 5,
+    booksIssued: 1
+  },
+  { 
+    id: '4', 
+    name: 'Rishi', 
+    email: 'rishi@sarec.com', 
+    role: 'student',
+    avatar: 'https://i.pravatar.cc/40?u=rishi@sarec.com',
+    enrollment: '2412150209002',
+    department: 'Electrical Engineering',
+    year: 3,
+    semester: 5,
+    booksIssued: 0
+  },
+    { 
+    id: '5', 
+    name: 'Milind', 
+    email: 'milind@sarec.com', 
+    role: 'student',
+    avatar: '',
+    enrollment: '2412150209003',
+    department: 'Electrical Engineering',
+    year: 3,
+    semester: 5,
+    booksIssued: 0
+  },
 ];
 
 export const borrowingHistory: BorrowingHistory[] = [
