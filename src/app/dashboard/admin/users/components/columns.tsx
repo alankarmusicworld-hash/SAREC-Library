@@ -12,7 +12,8 @@ export const columns: ColumnDef<User>[] = [
     id: 'srNo',
     header: 'Sr. No.',
     cell: ({ row, table }) => {
-      const rowIndex = table.getSortedRowModel().rows.findIndex(sortedRow => sortedRow.id === row.id);
+      const sortedRows = table.getSortedRowModel().rows;
+      const rowIndex = sortedRows.findIndex(sortedRow => sortedRow.id === row.id);
       return <span>{rowIndex + 1}</span>;
     },
   },
@@ -24,7 +25,7 @@ export const columns: ColumnDef<User>[] = [
         <Avatar className="h-10 w-10">
           <AvatarImage src={row.original.avatar} alt={row.original.name} />
           <AvatarFallback>
-            {row.original.name.split(' ').map(n => n[0]).join('')}
+            {row.original.name ? row.original.name.split(' ').map(n => n[0]).join('') : ''}
           </AvatarFallback>
         </Avatar>
         <div>
