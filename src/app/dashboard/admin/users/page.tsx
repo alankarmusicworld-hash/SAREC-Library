@@ -1,5 +1,10 @@
 
-import { users, User } from '@/lib/data';
+'use client';
+
+import { useState, useEffect } from 'react';
+import { users as initialUsers, User } from '@/lib/data';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { DataTable } from './components/data-table';
 import { columns } from './components/columns';
 import { Button } from '@/components/ui/button';
@@ -12,14 +17,58 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { AddMemberForm } from './components/add-member-form';
+import { useToast } from '@/hooks/use-toast';
 
-async function getUsers(): Promise<User[]> {
-  // In a real app, you would fetch data from an API.
-  return users;
-}
+export default function UserManagementPage() {
+  const [data, setData] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAddMemberOpen, setAddMemberOpen] = useState(false);
+  const { toast } = useToast();
 
-export default async function UserManagementPage() {
-  const data = await getUsers();
+  useEffect(() => {
+    setIsLoading(true);
+    const usersCollectionRef = collection(db, 'users');
+    const unsubscribe = onSnapshot(
+      usersCollectionRef,
+      (querySnapshot) => {
+        const usersData = querySnapshot.docs.map(
+          (doc) =>
+            ({
+              id: doc.id,
+              ...doc.data(),
+            } as User)
+        );
+        setData(usersData);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error('Error fetching users: ', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error fetching data',
+          description: 'Could not load users from the database.',
+        });
+        setIsLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [toast]);
+
+  const handleMemberAdded = () => {
+    // The form now handles adding to Firebase and showing toast.
+    // We just need to close the dialog.
+    setAddMemberOpen(false);
+  };
 
   return (
     <Card>
@@ -31,14 +80,27 @@ export default async function UserManagementPage() {
               Browse, search, and manage all members of the library.
             </CardDescription>
           </div>
-          <Button size="sm">
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add New Member
-          </Button>
+          <Dialog open={isAddMemberOpen} onOpenChange={setAddMemberOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <UserPlus className="mr-2 h-4 w-4" />
+                Add New Member
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Add New Library Member</DialogTitle>
+                <DialogDescription>
+                  Enter the details to create a new student account.
+                </DialogDescription>
+              </DialogHeader>
+              <AddMemberForm onMemberAdded={handleMemberAdded} />
+            </DialogContent>
+          </Dialog>
         </div>
       </CardHeader>
       <CardContent>
-         <div className="mb-4">
+        <div className="mb-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
