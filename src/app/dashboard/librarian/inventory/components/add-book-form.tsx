@@ -6,8 +6,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Book } from '@/lib/data';
-import { db } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -60,12 +58,11 @@ const formSchema = z.object({
 });
 
 interface AddBookFormProps {
-    onBookAdded: (newBook: Book) => void;
+    onBookAdded: (newBook: Omit<Book, 'id'>) => void;
     setOpen: (open: boolean) => void;
 }
 
 export function AddBookForm({ onBookAdded, setOpen }: AddBookFormProps) {
-  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
   const form = useForm<z.infer<typeof formSchema>>({
@@ -93,34 +90,21 @@ export function AddBookForm({ onBookAdded, setOpen }: AddBookFormProps) {
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true);
+    const newBook: Omit<Book, 'id'> = {
+      ...data,
+      status: 'available',
+      publicationDate: new Date().toISOString().split('T')[0],
+      coverImageUrl: `https://picsum.photos/seed/${data.isbn}/300/400`,
+    };
+
     try {
-      const newBook: Omit<Book, 'id'> = {
-        ...data,
-        status: 'available',
-        publicationDate: new Date().toISOString().split('T')[0],
-        coverImageUrl: `https://picsum.photos/seed/${data.isbn}/300/400`,
-      };
-
-      const booksCollectionRef = collection(db, 'books');
-      await addDoc(booksCollectionRef, newBook);
-      
-      toast({
-        title: 'Book Added!',
-        description: `"${data.title}" has been added to the catalog.`,
-      });
-      
-      setOpen(false); // Close the dialog on success
-      form.reset();
-
-    } catch (error: any) {
-      console.error('Error adding book: ', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error Adding Book',
-        description: 'Something went wrong. Please try again.',
-      });
+        await onBookAdded(newBook);
+        setOpen(false);
+        form.reset();
+    } catch(e) {
+        // Toast is handled in the parent
     } finally {
-      setIsLoading(false);
+        setIsLoading(false);
     }
   }
 

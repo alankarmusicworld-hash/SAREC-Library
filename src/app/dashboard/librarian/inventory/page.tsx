@@ -199,9 +199,23 @@ export default function InventoryManagementPage() {
     XLSX.writeFile(workbook, "book_import_template.xlsx");
   };
 
-  const handleBookAdded = (newBook: Book) => {
-    // This is now handled by the real-time listener
-  };
+    const handleBookAdded = async (newBookData: Omit<Book, 'id'>) => {
+        const booksCollectionRef = collection(db, 'books');
+        try {
+            await addDoc(booksCollectionRef, newBookData);
+            toast({
+                title: 'Book Added!',
+                description: `"${newBookData.title}" has been added to the catalog.`,
+            });
+        } catch (error) {
+            console.error("Error adding book: ", error);
+            toast({
+                variant: "destructive",
+                title: "Error Adding Book",
+                description: "Something went wrong. Please try again.",
+            });
+        }
+    };
 
   const handleBookUpdated = async (updatedBook: Book) => {
     if (!updatedBook.id) return;
@@ -227,6 +241,10 @@ export default function InventoryManagementPage() {
      const bookRef = doc(db, 'books', bookId);
      try {
         await deleteDoc(bookRef);
+         toast({
+            title: 'Book Deleted',
+            description: `The book has been removed from the catalog.`,
+        });
      } catch (error) {
          console.error("Error deleting book: ", error);
         toast({

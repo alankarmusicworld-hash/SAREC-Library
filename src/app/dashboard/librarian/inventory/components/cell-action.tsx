@@ -46,10 +46,6 @@ export const CellAction: React.FC<CellActionProps> = ({
     if (!data.id) return;
     try {
         await onBookDeleted(data.id);
-        toast({
-        title: 'Book Deleted',
-        description: `"${data.title}" has been removed from the catalog.`,
-        });
         setDeleteOpen(false);
     } catch (error) {
         // The error toast is handled in the parent component's `handleBookDeleted` function
