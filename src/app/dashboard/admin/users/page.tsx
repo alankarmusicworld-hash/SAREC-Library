@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { users as initialUsers, User } from '@/lib/data';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { DataTable } from './components/data-table';
 import { columns } from './components/columns';
 import { Button } from '@/components/ui/button';
@@ -32,13 +32,33 @@ export default function UserManagementPage() {
   const [data, setData] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddMemberOpen, setAddMemberOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const role = localStorage.getItem('userRole');
+      setUserRole(role);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!userRole) return; // Don't fetch until role is known
+
     setIsLoading(true);
+    let usersQuery;
     const usersCollectionRef = collection(db, 'users');
+
+    if (userRole === 'librarian') {
+      // Librarians only see students
+      usersQuery = query(usersCollectionRef, where('role', '==', 'student'));
+    } else {
+      // Admins see everyone
+      usersQuery = query(usersCollectionRef);
+    }
+    
     const unsubscribe = onSnapshot(
-      usersCollectionRef,
+      usersQuery,
       (querySnapshot) => {
         const usersData = querySnapshot.docs.map(
           (doc) =>
@@ -62,7 +82,7 @@ export default function UserManagementPage() {
     );
 
     return () => unsubscribe();
-  }, [toast]);
+  }, [toast, userRole]);
 
   const handleMemberAdded = () => {
     // The form now handles adding to Firebase and showing toast.
