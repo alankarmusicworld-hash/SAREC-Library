@@ -3,7 +3,9 @@
 
 import { useState, ChangeEvent, useMemo, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { books, Book } from '@/lib/data';
+import { Book } from '@/lib/data';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, onSnapshot, doc, setDoc, deleteDoc, addDoc, query, where } from 'firebase/firestore';
 import { DataTable } from './components/data-table';
 import { columns } from './components/columns';
 import { Button } from '@/components/ui/button';
@@ -39,7 +41,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function InventoryManagementPage() {
-  const [data, setData] = useState<Book[]>(books);
+  const [data, setData] = useState<Book[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isAddBookOpen, setAddBookOpen] = useState(false);
@@ -51,6 +54,31 @@ export default function InventoryManagementPage() {
   const [selectedPublisher, setSelectedPublisher] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const { toast } = useToast();
+  
+  useEffect(() => {
+    setIsLoading(true);
+    const booksCollectionRef = collection(db, 'books');
+    const unsubscribe = onSnapshot(booksCollectionRef, (querySnapshot) => {
+        const booksData = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        } as Book));
+        setData(booksData);
+        setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching books: ", error);
+        toast({
+            variant: "destructive",
+            title: "Error fetching data",
+            description: "Could not load books from the database.",
+        });
+        setIsLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [toast]);
+
 
   const authors = useMemo(() => {
     const authorSet = new Set(data.map(book => book.author));
@@ -75,8 +103,8 @@ export default function InventoryManagementPage() {
       const lowercasedQuery = searchQuery.toLowerCase();
       filtered = filtered.filter(book =>
         book.title.toLowerCase().includes(lowercasedQuery) ||
-        book.isbn.toLowerCase().includes(lowercasedQuery) ||
-        book.category?.toLowerCase().includes(lowercasedQuery) ||
+        (book.isbn && book.isbn.toLowerCase().includes(lowercasedQuery)) ||
+        (book.category && book.category.toLowerCase().includes(lowercasedQuery)) ||
         book.author.toLowerCase().includes(lowercasedQuery)
       );
     }
@@ -115,7 +143,7 @@ export default function InventoryManagementPage() {
 
     setIsImporting(true);
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
         try {
             const fileData = e.target?.result;
             const workbook = XLSX.read(fileData, { type: 'binary' });
@@ -123,24 +151,28 @@ export default function InventoryManagementPage() {
             const worksheet = workbook.Sheets[sheetName];
             const jsonData = XLSX.utils.sheet_to_json<any>(worksheet);
 
-            const newBooks: Book[] = jsonData.map((row: any, index: number) => ({
-                id: `imported-${Date.now()}-${index}`,
-                title: row['Book Title'],
-                author: row['Author'],
-                publisher: row['Publication'],
-                isbn: row['ISBN'],
-                category: row['Category'],
-                copies: row['Copies'],
-                status: 'available',
-                publicationDate: new Date().toISOString().split('T')[0],
-                coverImageUrl: `https://picsum.photos/seed/${row['ISBN'] || `new${index}`}/300/400`,
-            }));
-
-            setData(prev => [...prev, ...newBooks]);
+            const booksCollectionRef = collection(db, 'books');
+            let importedCount = 0;
+            
+            for (const row of jsonData) {
+                 const newBook: Omit<Book, 'id'> = {
+                    title: row['Book Title'],
+                    author: row['Author'],
+                    publisher: row['Publication'],
+                    isbn: row['ISBN'],
+                    category: row['Category'],
+                    copies: row['Copies'],
+                    status: 'available',
+                    publicationDate: new Date().toISOString().split('T')[0],
+                    coverImageUrl: `https://picsum.photos/seed/${row['ISBN'] || `new${importedCount}`}/300/400`,
+                };
+                await addDoc(booksCollectionRef, newBook);
+                importedCount++;
+            }
 
             toast({
                 title: "Import Successful",
-                description: `${newBooks.length} books have been added to the catalog.`,
+                description: `${importedCount} books have been added to the catalog.`,
             });
         } catch (error) {
             console.error("Import error:", error);
@@ -168,18 +200,45 @@ export default function InventoryManagementPage() {
   };
 
   const handleBookAdded = (newBook: Book) => {
-    setData(prev => [newBook, ...prev]);
+    // This is now handled by the real-time listener
   };
 
-  const handleBookUpdated = (updatedBook: Book) => {
-    setData(prev => prev.map(book => book.id === updatedBook.id ? updatedBook : book));
+  const handleBookUpdated = async (updatedBook: Book) => {
+    if (!updatedBook.id) return;
+    const bookRef = doc(db, 'books', updatedBook.id);
+    try {
+        const { id, ...bookData } = updatedBook;
+        await setDoc(bookRef, bookData, { merge: true });
+        toast({
+            title: 'Book Updated!',
+            description: `"${updatedBook.title}" has been updated.`,
+        });
+    } catch (error) {
+        console.error("Error updating book: ", error);
+        toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: "Could not update the book in the database.",
+        });
+    }
   };
 
-  const handleBookDeleted = (bookId: string) => {
-    setData(prev => prev.filter(book => book.id !== bookId));
+  const handleBookDeleted = async (bookId: string) => {
+     const bookRef = doc(db, 'books', bookId);
+     try {
+        await deleteDoc(bookRef);
+     } catch (error) {
+         console.error("Error deleting book: ", error);
+        toast({
+            variant: "destructive",
+            title: "Delete Failed",
+            description: "Could not delete the book from the database.",
+        });
+     }
   };
   
   const clearFilters = () => {
+    setSearchQuery('');
     setSelectedAuthor('');
     setSelectedPublisher('');
     setSelectedCategory('');
@@ -275,7 +334,7 @@ export default function InventoryManagementPage() {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="secondary">Cancel</Button>
+                        <Button variant="secondary" onClick={() => { setIsImporting(false); setImportFile(null); }}>Cancel</Button>
                         <Button onClick={handleImport} disabled={isImporting || !importFile}>
                             {isImporting ? "Importing..." : "Import Books"}
                         </Button>
@@ -412,10 +471,16 @@ export default function InventoryManagementPage() {
             </div>
           </div>
           <TabsContent value="all-books" className="mt-4">
-            <DataTable 
-                columns={columns({ onBookUpdated: handleBookUpdated, onBookDeleted: handleBookDeleted })} 
-                data={filteredData} 
-            />
+            {isLoading ? (
+                <div className="flex justify-center items-center h-64">
+                    <p>Loading books...</p>
+                </div>
+            ) : (
+                <DataTable 
+                    columns={columns({ onBookUpdated: handleBookUpdated, onBookDeleted: handleBookDeleted })} 
+                    data={filteredData} 
+                />
+            )}
           </TabsContent>
           <TabsContent value="by-department" className="mt-4">
             <div className="flex flex-col items-center justify-center gap-4 text-center h-64 rounded-md border border-dashed">

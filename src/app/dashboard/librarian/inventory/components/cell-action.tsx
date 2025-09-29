@@ -42,14 +42,18 @@ export const CellAction: React.FC<CellActionProps> = ({
   const [isIssueOpen, setIssueOpen] = useState(false);
   const { toast } = useToast();
 
-  const handleDelete = () => {
-    // In a real app, you would make an API call to delete the book
-    onBookDeleted(data.id!);
-    toast({
-      title: 'Book Deleted',
-      description: `"${data.title}" has been removed from the catalog.`,
-    });
-    setDeleteOpen(false);
+  const handleDelete = async () => {
+    if (!data.id) return;
+    try {
+        await onBookDeleted(data.id);
+        toast({
+        title: 'Book Deleted',
+        description: `"${data.title}" has been removed from the catalog.`,
+        });
+        setDeleteOpen(false);
+    } catch (error) {
+        // The error toast is handled in the parent component's `handleBookDeleted` function
+    }
   };
 
   return (
@@ -65,7 +69,10 @@ export const CellAction: React.FC<CellActionProps> = ({
           </DialogHeader>
           <EditBookForm
             book={data}
-            onBookUpdated={onBookUpdated}
+            onBookUpdated={(updatedBook) => {
+              onBookUpdated(updatedBook);
+              setEditOpen(false);
+            }}
             setOpen={setEditOpen}
           />
         </DialogContent>

@@ -76,23 +76,14 @@ export function EditBookForm({ book, onBookUpdated, setOpen }: EditBookFormProps
       isbn: book.isbn || '',
       category: book.category || '',
       copies: book.copies || '',
-      department: '', // These will be set based on book data if available
-      year: '',
-      semester: '',
+      department: book.department || '',
+      year: book.year || '',
+      semester: book.semester || '',
     },
   });
 
   const selectedYear = form.watch('year');
   const availableSemesters = selectedYear ? semesterOptions[selectedYear] : [];
-
-  useEffect(() => {
-    // In a real app, you might fetch department/year/semester if they are stored with the book
-    // For now, let's just initialize them if they exist as properties
-    if (book.department) form.setValue('department', book.department);
-    if (book.year) form.setValue('year', book.year);
-    if (book.semester) form.setValue('semester', book.semester);
-  }, [book, form]);
-
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true);
@@ -102,15 +93,8 @@ export function EditBookForm({ book, onBookUpdated, setOpen }: EditBookFormProps
         ...data,
       };
 
-      // In a real app, you'd send this to your API
-      console.log('Updated Book:', updatedBook);
       onBookUpdated(updatedBook);
-      
-      toast({
-        title: 'Book Updated!',
-        description: `"${data.title}" has been updated.`,
-      });
-      
+      // The toast notification is now handled in the parent component to confirm successful DB update.
       setOpen(false);
 
     } catch (error: any) {

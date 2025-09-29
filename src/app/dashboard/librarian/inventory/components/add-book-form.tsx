@@ -5,7 +5,9 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { books, Book } from '@/lib/data';
+import { Book } from '@/lib/data';
+import { db } from '@/lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -92,17 +94,15 @@ export function AddBookForm({ onBookAdded, setOpen }: AddBookFormProps) {
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      const newBook: Book = {
-        id: `book-${Date.now()}`,
+      const newBook: Omit<Book, 'id'> = {
         ...data,
         status: 'available',
         publicationDate: new Date().toISOString().split('T')[0],
         coverImageUrl: `https://picsum.photos/seed/${data.isbn}/300/400`,
       };
 
-      // In a real app, you'd send this to your API
-      console.log('New Book:', newBook);
-      onBookAdded(newBook);
+      const booksCollectionRef = collection(db, 'books');
+      await addDoc(booksCollectionRef, newBook);
       
       toast({
         title: 'Book Added!',
@@ -291,4 +291,3 @@ export function AddBookForm({ onBookAdded, setOpen }: AddBookFormProps) {
     </Form>
   );
 }
-
