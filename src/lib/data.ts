@@ -36,6 +36,7 @@ export type BorrowingHistory = {
   checkoutDate: string;
   dueDate: string;
   returnDate: string | null;
+  status: 'issued' | 'returned' | 'overdue';
 };
 
 export type Fine = {
@@ -113,6 +114,42 @@ export const books: Book[] = [
     category: 'Dystopian',
     copies: '3/3',
   },
+    {
+    id: '6',
+    title: 'Clean Code',
+    author: 'Robert C. Martin',
+    isbn: '9780132350884',
+    publicationDate: '2008-08-01',
+    publisher: 'Prentice Hall',
+    status: 'checked-out',
+    coverImageUrl: 'https://picsum.photos/seed/book6/300/400',
+    category: 'Software',
+    copies: '1/2',
+  },
+  {
+    id: '7',
+    title: 'Introduction to Algorithms',
+    author: 'CLRS',
+    isbn: '9780262033848',
+    publicationDate: '2009-07-31',
+    publisher: 'The MIT Press',
+    status: 'checked-out',
+    coverImageUrl: 'https://picsum.photos/seed/book7/300/400',
+    category: 'Computer Science',
+    copies: '2/3',
+  },
+   {
+    id: '8',
+    title: 'Pride and Prejudice',
+    author: 'Jane Austen',
+    isbn: '978-1503290563',
+    publicationDate: '1813-01-28',
+    publisher: 'T. Egerton, Whitehall',
+    status: 'available',
+    coverImageUrl: 'https://picsum.photos/seed/book8/300/400',
+    category: 'Romance',
+    copies: '4/4',
+  },
 ];
 
 export const users: User[] = [
@@ -176,6 +213,30 @@ export const users: User[] = [
     semester: 5,
     booksIssued: 0
   },
+  { 
+    id: '1001',
+    name: 'Riya Sharma',
+    email: 'riya@sarec.com',
+    role: 'student',
+    avatar: '',
+    enrollment: 'STU1001',
+    department: 'Computer Science',
+    year: 2,
+    semester: 4,
+    booksIssued: 1
+  },
+   { 
+    id: '1002',
+    name: 'Aman Verma',
+    email: 'aman@sarec.com',
+    role: 'student',
+    avatar: '',
+    enrollment: 'STU1002',
+    department: 'Mechanical Engineering',
+    year: 3,
+    semester: 6,
+    booksIssued: 1
+  },
 ];
 
 export const borrowingHistory: BorrowingHistory[] = [
@@ -186,6 +247,7 @@ export const borrowingHistory: BorrowingHistory[] = [
     checkoutDate: '2024-05-01',
     dueDate: '2024-05-15',
     returnDate: null,
+    status: 'issued',
   },
   {
     id: 'h2',
@@ -194,6 +256,7 @@ export const borrowingHistory: BorrowingHistory[] = [
     checkoutDate: '2024-05-10',
     dueDate: '2024-05-24',
     returnDate: null,
+    status: 'issued',
   },
   {
     id: 'h3',
@@ -202,6 +265,34 @@ export const borrowingHistory: BorrowingHistory[] = [
     checkoutDate: '2024-04-15',
     dueDate: '2024-04-29',
     returnDate: '2024-04-28',
+    status: 'returned',
+  },
+  {
+    id: 'h4',
+    userId: '1001',
+    bookId: '6',
+    checkoutDate: '25/07/2024',
+    dueDate: '08/08/2024',
+    returnDate: null,
+    status: 'overdue',
+  },
+  {
+    id: 'h5',
+    userId: '1002',
+    bookId: '7',
+    checkoutDate: '10/07/2024',
+    dueDate: '24/07/2024',
+    returnDate: null,
+    status: 'overdue',
+  },
+  {
+    id: 'h6',
+    userId: '4',
+    bookId: '8',
+    checkoutDate: '23/08/2025',
+    dueDate: '06/09/2025',
+    returnDate: '01/09/2025',
+    status: 'returned',
   },
 ];
 
@@ -255,3 +346,4 @@ export const fines: Fine[] = [
       verifiedBy: 'admin'
     },
   ];
+
