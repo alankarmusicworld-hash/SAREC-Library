@@ -43,7 +43,7 @@ const navItemsByRole: Record<string, NavItem[]> = {
     { href: '/dashboard/admin/users', label: 'Members', icon: Users },
     { href: '/dashboard/librarian/transactions', label: 'Issues/Returns', icon: BookOpenCheck },
     { href: '/dashboard/student/reservations', label: 'Reservations', icon: CalendarClock },
-    { href: '/dashboard/student/fines', label: 'Fines', icon: CircleDollarSign },
+    { href: '/dashboard/admin/fines', label: 'Fines', icon: CircleDollarSign },
     { href: '#', label: 'Reports', icon: AreaChart },
     { href: '#', label: 'Settings', icon: Settings },
   ],
@@ -52,7 +52,7 @@ const navItemsByRole: Record<string, NavItem[]> = {
     { href: '/dashboard/admin/users', label: 'Members', icon: Users },
     { href: '/dashboard/librarian/transactions', label: 'Issues/Returns', icon: BookOpenCheck },
     { href: '/dashboard/student/reservations', label: 'Reservations', icon: CalendarClock },
-    { href: '/dashboard/student/fines', label: 'Fines', icon: CircleDollarSign },
+    { href: '/dashboard/admin/fines', label: 'Fines', icon: CircleDollarSign },
   ],
   student: [
     { href: '/dashboard/student/browse', label: 'All Books', icon: Book },

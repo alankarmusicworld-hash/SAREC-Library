@@ -46,7 +46,7 @@ export type Fine = {
   amount: number;
   reason: string;
   dateIssued: string;
-  status: 'paid' | 'unpaid';
+  status: 'paid' | 'unpaid' | 'pending-verification';
   paymentDate?: string | null;
   paymentMethod?: 'cash' | 'online' | null;
   verifiedBy?: 'admin' | 'librarian' | null;
@@ -271,8 +271,8 @@ export const borrowingHistory: BorrowingHistory[] = [
     id: 'h4',
     userId: '1001',
     bookId: '6',
-    checkoutDate: '25/07/2024',
-    dueDate: '08/08/2024',
+    checkoutDate: '2024-07-25',
+    dueDate: '2024-08-08',
     returnDate: null,
     status: 'overdue',
   },
@@ -280,8 +280,8 @@ export const borrowingHistory: BorrowingHistory[] = [
     id: 'h5',
     userId: '1002',
     bookId: '7',
-    checkoutDate: '10/07/2024',
-    dueDate: '24/07/2024',
+    checkoutDate: '2024-07-10',
+    dueDate: '2024-07-24',
     returnDate: null,
     status: 'overdue',
   },
@@ -289,9 +289,9 @@ export const borrowingHistory: BorrowingHistory[] = [
     id: 'h6',
     userId: '4',
     bookId: '8',
-    checkoutDate: '23/08/2025',
-    dueDate: '06/09/2025',
-    returnDate: '01/09/2025',
+    checkoutDate: '2023-08-23',
+    dueDate: '2023-09-06',
+    returnDate: '2023-09-01',
     status: 'returned',
   },
 ];
@@ -302,7 +302,7 @@ export const fines: Fine[] = [
       userId: '3',
       bookId: '1',
       amount: 20.00,
-      reason: 'Late return',
+      reason: 'Late return (4 days)',
       dateIssued: '2024-05-05',
       status: 'unpaid',
       paymentDate: null,
@@ -311,7 +311,7 @@ export const fines: Fine[] = [
     },
     {
       id: 'f2',
-      userId: '3',
+      userId: '4',
       bookId: '5',
       amount: 50.00,
       reason: 'Book damaged',
@@ -326,7 +326,7 @@ export const fines: Fine[] = [
       userId: '3',
       bookId: '2',
       amount: 15.00,
-      reason: 'Late return',
+      reason: 'Late return (3 days)',
       dateIssued: '2024-04-18',
       status: 'paid',
       paymentDate: '2024-04-22',
@@ -335,15 +335,40 @@ export const fines: Fine[] = [
     },
     {
       id: 'f4',
-      userId: '4',
-      bookId: '3',
+      userId: '1001',
+      bookId: '6',
       amount: 25.00,
-      reason: 'Lost book',
-      dateIssued: '2024-03-10',
+      reason: 'Late return (5 days)',
+      dateIssued: '2024-08-13',
+      status: 'unpaid',
+      paymentDate: null,
+      paymentMethod: null,
+      verifiedBy: null
+    },
+    {
+      id: 'f5',
+      userId: '1002',
+      bookId: '7',
+      amount: 45.00,
+      reason: 'Late return (9 days)',
+      dateIssued: '2024-08-02',
+      status: 'pending-verification',
+      paymentDate: '2024-08-03',
+      paymentMethod: 'cash',
+      verifiedBy: null,
+    },
+     {
+      id: 'f6',
+      userId: '4',
+      bookId: '8',
+      amount: 10.00,
+      reason: 'Late return (2 days)',
+      dateIssued: '2023-09-08',
       status: 'paid',
-      paymentDate: '2024-03-15',
+      paymentDate: '2023-09-08',
       paymentMethod: 'cash',
       verifiedBy: 'admin'
     },
   ];
+
 

@@ -38,7 +38,7 @@ const navItemsByRole: Record<string, NavItem[]> = {
       { href: '/dashboard/admin/users', label: 'Members', icon: Users },
       { href: '/dashboard/librarian/transactions', label: 'Issues/Returns', icon: BookOpenCheck },
       { href: '/dashboard/student/reservations', label: 'Reservations', icon: CalendarClock },
-      { href: '/dashboard/student/fines', label: 'Fines', icon: CircleDollarSign },
+      { href: '/dashboard/admin/fines', label: 'Fines', icon: CircleDollarSign },
       { href: '#', label: 'Reports', icon: AreaChart },
       { href: '#', label: 'Settings', icon: Settings },
     ],
@@ -47,7 +47,7 @@ const navItemsByRole: Record<string, NavItem[]> = {
     { href: '/dashboard/admin/users', label: 'Members', icon: Users },
     { href: '/dashboard/librarian/transactions', label: 'Issues/Returns', icon: BookOpenCheck },
     { href: '/dashboard/student/reservations', label: 'Reservations', icon: CalendarClock },
-    { href: '/dashboard/student/fines', label: 'Fines', icon: CircleDollarSign },
+    { href: '/dashboard/admin/fines', label: 'Fines', icon: CircleDollarSign },
   ],
   student: [
     { href: '/dashboard/student/browse', label: 'All Books', icon: Book },
@@ -87,7 +87,7 @@ const NavContent = () => {
             href={href}
             className={cn(
               'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
-              pathname === href && 'bg-primary/10 text-primary'
+              pathname.startsWith(href) && href !== '/dashboard' ? 'bg-primary/10 text-primary' : pathname === href ? 'bg-primary/10 text-primary' : ''
             )}
           >
             <Icon className="h-4 w-4" />
