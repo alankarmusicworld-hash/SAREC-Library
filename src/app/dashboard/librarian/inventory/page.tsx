@@ -61,7 +61,7 @@ const semesterOptions: Record<string, string[]> = {
 export default function InventoryManagementPage() {
   const [data, setData] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isImporting, setIsImporting] = useState(isImporting);
+  const [isImporting, setIsImporting] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isAddBookOpen, setAddBookOpen] = useState(false);
   const [isScanDialogOpen, setScanDialogOpen] = useState(false);
@@ -641,5 +641,7 @@ export default function InventoryManagementPage() {
     </Card>
   );
 }
+
+    
 
     
