@@ -35,7 +35,9 @@ interface IssueBookFormProps {
 export function IssueBookForm({ book, setOpen }: IssueBookFormProps) {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFetchingStudent, setIsFetchingStudent] = useState(false);
+  const [studentDetails, setStudentDetails] = useState<User | null>(null);
   const [settings, setSettings] = useState({ loanPeriod: 15 }); // Default loan period
   
   const issueDate = new Date();
@@ -59,31 +61,63 @@ export function IssueBookForm({ book, setOpen }: IssueBookFormProps) {
     },
   });
 
+  const enrollmentNumberValue = form.watch('enrollmentNumber');
+
+  useEffect(() => {
+    // Reset student details if enrollment number is cleared
+    if (!enrollmentNumberValue) {
+        setStudentDetails(null);
+    }
+  }, [enrollmentNumberValue]);
+
+  const handleFindStudent = async () => {
+    const enrollmentNumber = form.getValues('enrollmentNumber');
+    if (!enrollmentNumber) {
+        form.setError('enrollmentNumber', { type: 'manual', message: 'Please enter a student ID.'});
+        return;
+    }
+    
+    setIsFetchingStudent(true);
+    setStudentDetails(null);
+
+    try {
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('enrollmentNumber', '==', enrollmentNumber));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        toast({ variant: 'destructive', title: 'Student Not Found', description: `No student found with ID ${enrollmentNumber}.` });
+      } else {
+        const studentDoc = querySnapshot.docs[0];
+        setStudentDetails({ id: studentDoc.id, ...studentDoc.data() } as User);
+      }
+    } catch(error) {
+         toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch student details.' });
+    } finally {
+        setIsFetchingStudent(false);
+    }
+  };
+
+
   async function onSubmit(data: z.infer<typeof formSchema>) {
-    setIsLoading(true);
+    setIsSubmitting(true);
+
+    if (!studentDetails) {
+        toast({ variant: 'destructive', title: 'Student not verified', description: 'Please find and verify the student before issuing.' });
+        setIsSubmitting(false);
+        return;
+    }
 
     const [availableCopies, totalCopies] = book.copies?.split('/').map(Number) || [0, 0];
 
     if (availableCopies <= 0) {
         toast({ variant: 'destructive', title: 'Not Available', description: 'This book is currently out of stock.' });
-        setIsLoading(false);
+        setIsSubmitting(false);
         return;
     }
 
     try {
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('enrollmentNumber', '==', data.enrollmentNumber));
-      const querySnapshot = await getDocs(q);
-
-      if (querySnapshot.empty) {
-        toast({ variant: 'destructive', title: 'Student Not Found', description: `No student found with ID ${data.enrollmentNumber}.` });
-        setIsLoading(false);
-        return;
-      }
-      
-      const studentDoc = querySnapshot.docs[0];
-      const student = { id: studentDoc.id, ...studentDoc.data() } as User;
-      
+      const student = studentDetails;
       const batch = writeBatch(db);
 
       // 1. Update book copy count
@@ -127,7 +161,7 @@ export function IssueBookForm({ book, setOpen }: IssueBookFormProps) {
         description: 'Something went wrong. Please try again.',
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   }
 
@@ -149,7 +183,7 @@ export function IssueBookForm({ book, setOpen }: IssueBookFormProps) {
                 <span className="text-muted-foreground">Issue Date</span>
                 <span>{format(issueDate, 'PPP')}</span>
             </div>
-             <div className="flex justify-between text-sm">
+             <div className="flex justify-between text-sm text-primary font-medium">
                 <span className="text-muted-foreground">Due Date</span>
                 <span>{format(dueDate, 'PPP')}</span>
             </div>
@@ -160,19 +194,42 @@ export function IssueBookForm({ book, setOpen }: IssueBookFormProps) {
             name="enrollmentNumber"
             render={({ field }) => (
             <FormItem>
-                <FormLabel>Student ID</FormLabel>
-                <FormControl>
-                <Input placeholder="Enter student's college ID" {...field} />
-                </FormControl>
+                <FormLabel>Student College ID</FormLabel>
+                <div className="flex gap-2">
+                    <FormControl>
+                        <Input placeholder="Enter student's ID and find" {...field} />
+                    </FormControl>
+                    <Button type="button" onClick={handleFindStudent} disabled={isFetchingStudent || !enrollmentNumberValue}>
+                        {isFetchingStudent ? 'Finding...' : 'Find Student'}
+                    </Button>
+                </div>
                 <FormMessage />
             </FormItem>
             )}
         />
         
+        {studentDetails && (
+            <div className="space-y-4 rounded-md border p-4">
+                <h4 className="font-semibold text-center">Student Details</h4>
+                 <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Name</span>
+                    <span className="font-medium">{studentDetails.name}</span>
+                </div>
+                 <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Department</span>
+                    <span>{studentDetails.department}</span>
+                </div>
+                 <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Year</span>
+                    <span>{studentDetails.year}</span>
+                </div>
+            </div>
+        )}
+
         <div className="flex justify-end gap-2 mt-4">
             <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Issuing...' : 'Confirm & Issue Book'}
+            <Button type="submit" disabled={isSubmitting || !studentDetails}>
+                {isSubmitting ? 'Issuing...' : 'Confirm & Issue Book'}
             </Button>
         </div>
       </form>
