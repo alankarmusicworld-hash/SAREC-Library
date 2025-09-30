@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -20,6 +20,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
 
 type Reservation = {
   id: string;
@@ -31,55 +33,53 @@ type Reservation = {
   priority: 'High' | 'Medium' | 'Low';
 };
 
-const initialReservations: Reservation[] = [
-  {
-    id: 'res1',
-    bookTitle: 'The C Programming Language',
-    studentName: 'Riya Sharma',
-    department: 'Computer Science',
-    reservationDate: '28/07/2024',
-    status: 'Pending',
-    priority: 'High',
-  },
-  {
-    id: 'res2',
-    bookTitle: 'The C Programming Language',
-    studentName: 'Rishi',
-    department: 'Electrical Engineering',
-    reservationDate: '24/08/2025',
-    status: 'Pending',
-    priority: 'Medium',
-  },
-   {
-    id: 'res3',
-    bookTitle: 'Data Structures',
-    studentName: 'Aman Verma',
-    department: 'Mechanical Engineering',
-    reservationDate: '22/07/2024',
-    status: 'Pending',
-    priority: 'Medium',
-  },
-   {
-    id: 'res4',
-    bookTitle: 'Digital Electronics',
-    studentName: 'Milind',
-    department: 'Electrical Engineering',
-    reservationDate: '20/07/2024',
-    status: 'Issued',
-    priority: 'Low',
-  },
-];
 
 export default function AdminReservationsPage() {
-  const [reservations, setReservations] = useState<Reservation[]>(initialReservations);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const handleCancelReservation = (reservationId: string, studentName: string, bookTitle: string) => {
-    setReservations(reservations.filter(res => res.id !== reservationId));
-    toast({
-        title: "Reservation Cancelled",
-        description: `Reservation for "${bookTitle}" by ${studentName} has been cancelled.`
-    })
+  useEffect(() => {
+    setIsLoading(true);
+    const reservationsCollectionRef = collection(db, 'reservations');
+    const unsubscribe = onSnapshot(reservationsCollectionRef, (querySnapshot) => {
+      const reservationsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Reservation)).sort((a, b) => new Date(a.reservationDate).getTime() - new Date(b.reservationDate).getTime());
+      
+      setReservations(reservationsData);
+      setIsLoading(false);
+    }, (error) => {
+      console.error("Error fetching reservations: ", error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not fetch reservations data.'
+      });
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [toast]);
+
+
+  const handleCancelReservation = async (reservationId: string, studentName: string, bookTitle: string) => {
+    const reservationRef = doc(db, 'reservations', reservationId);
+    try {
+        await deleteDoc(reservationRef);
+        toast({
+            title: "Reservation Cancelled",
+            description: `Reservation for "${bookTitle}" by ${studentName} has been cancelled.`
+        })
+    } catch(error) {
+        console.error("Error cancelling reservation: ", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not cancel the reservation."
+        })
+    }
   };
 
   return (
@@ -105,7 +105,11 @@ export default function AdminReservationsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {reservations.length > 0 ? (
+              {isLoading ? (
+                <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">Loading reservations...</TableCell>
+                </TableRow>
+              ) : reservations.length > 0 ? (
                 reservations.map((res, index) => (
                   <TableRow key={res.id}>
                     <TableCell className="font-medium">{res.bookTitle}</TableCell>
@@ -116,8 +120,8 @@ export default function AdminReservationsPage() {
                       <Badge variant={res.status === 'Pending' ? 'outline' : 'secondary'}>{res.status}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={res.priority === 'High' ? 'destructive' : 'secondary'}>
-                        {index + 1} ({res.priority})
+                      <Badge variant={index < 3 ? 'destructive' : 'secondary'}>
+                        {index + 1}
                       </Badge>
                     </TableCell>
                     <TableCell>

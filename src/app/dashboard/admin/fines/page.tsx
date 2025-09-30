@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -13,11 +13,13 @@ import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { DataTable } from './components/data-table';
 import { pendingColumns, unpaidColumns, paidColumns } from './components/columns';
-import { borrowingHistory, Book, User, Fine } from '@/lib/data';
-import { books, users, fines as initialFines } from '@/lib/data';
+import { Book, User, Fine } from '@/lib/data';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useNotifications } from '@/context/NotificationProvider';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot, doc, getDoc, updateDoc } from 'firebase/firestore';
+
 
 export type EnrichedFine = Fine & {
   book?: Book;
@@ -25,29 +27,68 @@ export type EnrichedFine = Fine & {
   dueDate: string;
 };
 
-// This function can be expanded to fetch real data
-function getEnrichedFines(): EnrichedFine[] {
-  return initialFines.map((fine) => {
-    const book = books.find((b) => b.id === fine.bookId);
-    const user = users.find((u) => u.id === fine.userId);
-    const history = borrowingHistory.find(h => h.bookId === fine.bookId && h.userId === fine.userId);
-    return { 
-        ...fine, 
-        book, 
-        user,
-        dueDate: history?.dueDate || 'N/A'
-    };
-  });
+async function fetchReferencedData(finesData: Fine[]): Promise<EnrichedFine[]> {
+    const enrichedFines: EnrichedFine[] = [];
+
+    for (const fine of finesData) {
+        let book: Book | undefined = undefined;
+        let user: User | undefined = undefined;
+        let dueDate: string = 'N/A';
+
+        if(fine.bookId) {
+            const bookDoc = await getDoc(doc(db, "books", fine.bookId));
+            if(bookDoc.exists()) book = { id: bookDoc.id, ...bookDoc.data() } as Book;
+        }
+
+        if(fine.userId) {
+            const userDoc = await getDoc(doc(db, "users", fine.userId));
+            if(userDoc.exists()) user = { id: userDoc.id, ...userDoc.data() } as User;
+        }
+        
+        // This is a simplification. A real app would query the borrowing history.
+        // For now, we'll keep it as N/A or a placeholder.
+        
+        enrichedFines.push({ ...fine, book, user, dueDate });
+    }
+    return enrichedFines;
 }
+
 
 type FineStatus = 'pending-verification' | 'unpaid' | 'paid';
 
 export default function ManageFinesPage() {
-  const [allFines, setAllFines] = useState<EnrichedFine[]>(getEnrichedFines);
+  const [allFines, setAllFines] = useState<EnrichedFine[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<FineStatus>('pending-verification');
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+
+
+  useEffect(() => {
+    setIsLoading(true);
+    const finesCollectionRef = collection(db, 'fines');
+    const unsubscribe = onSnapshot(finesCollectionRef, async (querySnapshot) => {
+        const finesData = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        } as Fine));
+
+        const enrichedData = await fetchReferencedData(finesData);
+        setAllFines(enrichedData);
+        setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching fines: ", error);
+        toast({
+            variant: "destructive",
+            title: "Error fetching data",
+            description: "Could not load fines from the database.",
+        });
+        setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [toast]);
 
 
   const filteredFines = useMemo(() => {
@@ -64,23 +105,31 @@ export default function ManageFinesPage() {
     return filtered.filter(fine => fine.status === activeTab);
   }, [searchQuery, allFines, activeTab]);
 
-  const handleVerifyPayment = (fineId: string, verifierRole: 'admin' | 'librarian') => {
-    setAllFines(prev => 
-      prev.map(f => 
-        f.id === fineId 
-          ? { 
-              ...f, 
-              status: 'paid', 
-              paymentDate: new Date().toISOString().split('T')[0],
-              verifiedBy: verifierRole 
-            } 
-          : f
-      )
-    );
-    const fine = allFines.find(f => f.id === fineId);
-    if(fine && fine.user) {
-        // In a real app, this notification would be pushed to the specific user.
-        addNotification(`Your fine of ₹${fine.amount} for "${fine.book?.title}" has been verified.`);
+  const handleVerifyPayment = async (fineId: string, verifierRole: 'admin' | 'librarian') => {
+    const fineRef = doc(db, 'fines', fineId);
+    try {
+        await updateDoc(fineRef, {
+            status: 'paid',
+            paymentDate: new Date().toISOString().split('T')[0],
+            verifiedBy: verifierRole
+        });
+        
+        const fine = allFines.find(f => f.id === fineId);
+        if(fine && fine.user) {
+            addNotification(`Your fine of ₹${fine.amount} for "${fine.book?.title}" has been verified.`);
+            // This toast is for the admin/librarian
+            toast({
+                title: 'Payment Verified',
+                description: `Fine for student ${fine.user.name} has been marked as paid.`
+            });
+        }
+    } catch (error) {
+        console.error("Error verifying payment: ", error);
+        toast({
+            variant: 'destructive',
+            title: 'Verification Failed',
+            description: 'Could not update the fine status in the database.'
+        });
     }
   };
 
@@ -93,6 +142,13 @@ export default function ManageFinesPage() {
     'unpaid': unpaidColumns(),
     'paid': paidColumns(),
   };
+  
+  const renderDataTable = () => {
+      if (isLoading) {
+          return <div className="text-center p-8">Loading fines...</div>;
+      }
+      return <DataTable columns={columnsMap[activeTab]} data={filteredFines} category={activeTab} />;
+  }
 
   return (
     <Card>
@@ -120,8 +176,14 @@ export default function ManageFinesPage() {
                     />
                 </div>
             </div>
-            <TabsContent value={activeTab}>
-                 <DataTable columns={columnsMap[activeTab]} data={filteredFines} category={activeTab} />
+            <TabsContent value="pending-verification">
+                 {renderDataTable()}
+            </TabsContent>
+            <TabsContent value="unpaid">
+                 {renderDataTable()}
+            </TabsContent>
+            <TabsContent value="paid">
+                 {renderDataTable()}
             </TabsContent>
         </Tabs>
       </CardContent>
