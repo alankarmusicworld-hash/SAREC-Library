@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, addDoc, query, where, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, query, where, serverTimestamp, Timestamp } from 'firebase/firestore';
 
 type Notification = {
   id: string;
@@ -41,8 +41,7 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
     const notificationsCollectionRef = collection(db, 'notifications');
     const q = query(
         notificationsCollectionRef, 
-        where("userId", "==", userId),
-        orderBy('createdAt', 'desc')
+        where("userId", "==", userId)
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -56,6 +55,15 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
                 createdAt: data.createdAt,
             } as Notification;
         });
+
+        // Sort on the client-side to avoid composite index requirement
+        notificationsData.sort((a, b) => {
+            if (a.createdAt && b.createdAt) {
+                return b.createdAt.toMillis() - a.createdAt.toMillis();
+            }
+            return 0;
+        });
+
         setNotifications(notificationsData);
     });
 
