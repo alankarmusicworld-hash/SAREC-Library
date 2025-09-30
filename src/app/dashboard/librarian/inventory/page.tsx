@@ -61,7 +61,7 @@ const semesterOptions: Record<string, string[]> = {
 export default function InventoryManagementPage() {
   const [data, setData] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isImporting, setIsImporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(isImporting);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isAddBookOpen, setAddBookOpen] = useState(false);
   const [isScanDialogOpen, setScanDialogOpen] = useState(false);
@@ -148,6 +148,10 @@ export default function InventoryManagementPage() {
   }, [data, searchQuery, selectedAuthor, selectedPublisher, selectedCategory]);
   
   const departmentFilteredData = useMemo(() => {
+    if (!deptFilter && !yearFilter && !semesterFilter) {
+      return [];
+    }
+    
     return data.filter(book => {
         const departmentMatch = deptFilter ? book.department === deptFilter : true;
         const yearMatch = yearFilter ? book.year === yearFilter : true;
@@ -207,7 +211,7 @@ export default function InventoryManagementPage() {
                     publisher: (row['Publication'] || row['publisher']) || '',
                     isbn: (row['ISBN'] || row['isbn']) || '',
                     category: (row['Category'] || row['category']) || '',
-                    copies: (row['Copies'] || row['copies']) || '',
+                    copies: String(row['Copies'] || row['copies'] || '0'),
                     department: (row['Department'] || row['department']) || '',
                     status: 'available',
                     publicationDate: new Date().toISOString().split('T')[0],
@@ -637,7 +641,5 @@ export default function InventoryManagementPage() {
     </Card>
   );
 }
-
-  
 
     
