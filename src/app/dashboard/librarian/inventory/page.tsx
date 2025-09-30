@@ -154,16 +154,22 @@ export default function InventoryManagementPage() {
 
             const booksCollectionRef = collection(db, 'books');
             let importedCount = 0;
+            let skippedCount = 0;
             
             for (const row of jsonData) {
+                 const bookTitle = row['Book Title'] || row['title'];
+                 if (!bookTitle) {
+                     skippedCount++;
+                     continue;
+                 }
                  const newBook: Omit<Book, 'id'> = {
-                    title: row['Book Title'],
-                    author: row['Author'],
-                    publisher: row['Publication'],
-                    isbn: row['ISBN'],
-                    category: row['Category'],
-                    copies: row['Copies'],
-                    department: row['Department'],
+                    title: bookTitle,
+                    author: row['Author'] || row['author'],
+                    publisher: row['Publication'] || row['publisher'],
+                    isbn: row['ISBN'] || row['isbn'],
+                    category: row['Category'] || row['category'],
+                    copies: row['Copies'] || row['copies'],
+                    department: row['Department'] || row['department'],
                     status: 'available',
                     publicationDate: new Date().toISOString().split('T')[0],
                     coverImageUrl: `https://picsum.photos/seed/${row['ISBN'] || `new${importedCount}`}/300/400`,
@@ -174,14 +180,14 @@ export default function InventoryManagementPage() {
 
             toast({
                 title: "Import Successful",
-                description: `${importedCount} books have been added to the catalog.`,
+                description: `${importedCount} books imported. ${skippedCount > 0 ? `${skippedCount} rows skipped due to missing titles.` : ''}`,
             });
         } catch (error) {
             console.error("Import error:", error);
             toast({
                 variant: "destructive",
                 title: "Import Failed",
-                description: "There was an error processing your file. Please check the format.",
+                description: "There was an error processing your file. Please check the format and data.",
             });
         } finally {
             setIsImporting(false);
@@ -540,4 +546,5 @@ export default function InventoryManagementPage() {
   );
 }
 
+    
     
