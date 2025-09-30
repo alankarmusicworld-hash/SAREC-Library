@@ -581,36 +581,36 @@ export default function InventoryManagementPage() {
                 <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
                     <div className="flex-1 space-y-2">
                         <Label>Department</Label>
-                        <Select value={deptFilter} onValueChange={setDeptFilter}>
+                        <Select value={deptFilter} onValueChange={(value) => setDeptFilter(value === 'all' ? '' : value)}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Select Department" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">All Departments</SelectItem>
+                                <SelectItem value="all">All Departments</SelectItem>
                                 {departments.map(dep => <SelectItem key={dep} value={dep}>{dep}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="flex-1 space-y-2">
                         <Label>Year</Label>
-                        <Select value={yearFilter} onValueChange={setYearFilter}>
+                        <Select value={yearFilter} onValueChange={(value) => setYearFilter(value === 'all' ? '' : value)}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Select Year" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">All Years</SelectItem>
+                                <SelectItem value="all">All Years</SelectItem>
                                 {years.map(y => <SelectItem key={y} value={y}>{y} Year</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="flex-1 space-y-2">
                         <Label>Semester</Label>
-                        <Select value={semesterFilter} onValueChange={setSemesterFilter} disabled={!yearFilter}>
+                        <Select value={semesterFilter} onValueChange={(value) => setSemesterFilter(value === 'all' ? '' : value)} disabled={!yearFilter}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Select Semester" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">All Semesters</SelectItem>
+                                <SelectItem value="all">All Semesters</SelectItem>
                                 {availableSemestersForFilter.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                             </SelectContent>
                         </Select>
@@ -639,3 +639,5 @@ export default function InventoryManagementPage() {
 }
 
   
+
+    
