@@ -62,7 +62,7 @@ export function MostIssuedChart({ department }: MostIssuedChartProps) {
             fontSize={12}
             tickLine={false}
             axisLine={false}
-            width={120}
+            width={150}
             tickFormatter={(value) => value.length > 20 ? `${value.substring(0, 20)}...` : value}
         />
         <Tooltip 
