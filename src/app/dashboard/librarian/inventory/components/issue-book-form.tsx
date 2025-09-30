@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, doc, writeBatch, Timestamp, increment } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, writeBatch, Timestamp, increment, getDoc } from 'firebase/firestore';
 import { useNotifications } from '@/context/NotificationProvider';
 
 const formSchema = z.object({
