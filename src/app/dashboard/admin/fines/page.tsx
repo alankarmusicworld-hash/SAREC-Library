@@ -115,8 +115,8 @@ export default function ManageFinesPage() {
         });
         
         const fine = allFines.find(f => f.id === fineId);
-        if(fine && fine.user) {
-            addNotification(`Your fine of ₹${fine.amount} for "${fine.book?.title}" has been verified.`);
+        if(fine && fine.user && fine.user.id) {
+            addNotification(`Your fine of ₹${fine.amount} for "${fine.book?.title}" has been verified.`, fine.user.id);
             // This toast is for the admin/librarian
             toast({
                 title: 'Payment Verified',
