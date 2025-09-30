@@ -1,4 +1,7 @@
 
+'use client';
+
+import { useState } from 'react';
 import {
     Card,
     CardContent,
@@ -11,8 +14,11 @@ import { Download, Printer, BookOpenCheck, Users, CircleDollarSign } from 'lucid
 import { MostIssuedChart } from './components/bar-chart';
 import { IssuancePieChart } from './components/pie-chart';
 import { DailyActivityChart } from './components/daily-activity-chart';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
   
 export default function ReportsPage() {
+    const [selectedDepartment, setSelectedDepartment] = useState('all');
+
     return (
         <div className="flex flex-col gap-6">
             <div className="flex justify-between items-center">
@@ -67,11 +73,23 @@ export default function ReportsPage() {
 
             <div className="grid gap-6 lg:grid-cols-2">
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Most Issued Books (All Time)</CardTitle>
+                    <CardHeader className="flex items-center justify-between">
+                        <CardTitle>Most Issued Books</CardTitle>
+                        <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                            <SelectTrigger className="w-[200px]">
+                                <SelectValue placeholder="Select Department" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Departments</SelectItem>
+                                <SelectItem value="Electrical">Electrical</SelectItem>
+                                <SelectItem value="Electronics">Electronics</SelectItem>
+                                <SelectItem value="Computer Science">Computer Science</SelectItem>
+                                <SelectItem value="General">General</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </CardHeader>
                     <CardContent>
-                        <MostIssuedChart />
+                        <MostIssuedChart department={selectedDepartment} />
                     </CardContent>
                 </Card>
                 <Card>
