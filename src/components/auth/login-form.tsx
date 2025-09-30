@@ -79,20 +79,27 @@ export function LoginForm({ role, idLabel, idPlaceholder}: LoginFormProps) {
 
     try {
       let emailToLogin: string;
+      const usersRef = collection(db, 'users');
+      let userQuery;
 
       if (data.role === 'student') {
-        const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('enrollmentNumber', '==', data.id));
-        const querySnapshot = await getDocs(q);
+        userQuery = query(usersRef, where('enrollmentNumber', '==', data.id));
+      } else { // Admin login
+        userQuery = query(usersRef, where('email', '==', data.id));
+      }
+      
+      const querySnapshot = await getDocs(userQuery);
 
-        if (querySnapshot.empty) {
-          throw new Error("Student ID not found.");
-        }
-        
-        const studentDoc = querySnapshot.docs[0];
-        emailToLogin = studentDoc.data().email;
-      } else {
-        emailToLogin = data.id;
+      if (querySnapshot.empty) {
+        throw new Error("User not found.");
+      }
+      
+      const userDocSnapshot = querySnapshot.docs[0];
+      const userData = userDocSnapshot.data();
+      emailToLogin = userData.email;
+
+      if (userData.role !== data.role) {
+        throw new Error("Mismatched role.");
       }
       
       const userCredential = await signInWithEmailAndPassword(auth, emailToLogin, data.password);
@@ -105,30 +112,19 @@ export function LoginForm({ role, idLabel, idPlaceholder}: LoginFormProps) {
         throw new Error("User data not found in Firestore.");
       }
       
-      const userData = userDoc.data();
-
-      if (userData.role !== data.role) {
-        await auth.signOut();
-        toast({
-          variant: 'destructive',
-          title: 'Login Failed',
-          description: 'You do not have permission to log in from this page.',
-        });
-        setIsLoading(false);
-        return;
-      }
+      const finalUserData = userDoc.data();
       
       if (typeof window !== 'undefined') {
-        localStorage.setItem('userRole', userData.role);
-        localStorage.setItem('userEmail', userData.email);
-        localStorage.setItem('userName', userData.name);
+        localStorage.setItem('userRole', finalUserData.role);
+        localStorage.setItem('userEmail', finalUserData.email);
+        localStorage.setItem('userName', finalUserData.name);
         localStorage.setItem('userId', user.uid);
 
-        if (userData.role === 'student') {
-            localStorage.setItem('userEnrollment', userData.enrollmentNumber);
-            localStorage.setItem('userDepartment', userData.department);
-            localStorage.setItem('userYear', userData.year);
-            localStorage.setItem('userSemester', userData.semester);
+        if (finalUserData.role === 'student') {
+            localStorage.setItem('userEnrollment', finalUserData.enrollmentNumber);
+            localStorage.setItem('userDepartment', finalUserData.department);
+            localStorage.setItem('userYear', finalUserData.year);
+            localStorage.setItem('userSemester', finalUserData.semester);
         }
       }
       toast({ title: 'Login Successful!', description: 'Redirecting to dashboard...' });
@@ -138,11 +134,14 @@ export function LoginForm({ role, idLabel, idPlaceholder}: LoginFormProps) {
       console.error("Login Error: ", error);
       let description = 'An error occurred while trying to log in.';
       
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-email') {
+      if (error.code === 'auth/invalid-credential') {
         description = 'Invalid credentials. Please check your ID and password.';
-      } else if (error.message.includes("Student ID not found")) {
-        description = "Student ID not found. Please check your College ID and try again.";
+      } else if (error.message === "User not found.") {
+        description = "User not found. Please check your login ID and try again.";
+      } else if (error.message === "Mismatched role.") {
+        description = 'You do not have permission to log in from this page.';
       }
+
 
       toast({
         variant: 'destructive',
