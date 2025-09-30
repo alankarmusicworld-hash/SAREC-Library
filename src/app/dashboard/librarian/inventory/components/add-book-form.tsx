@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { Minus, Plus } from 'lucide-react';
 
 const departments = [
   'Computer Science',
@@ -51,7 +52,7 @@ const formSchema = z.object({
     publisher: z.string().min(1, 'Publication is required'),
     isbn: z.string().min(1, 'ISBN is required'),
     category: z.string().min(1, 'Category is required'),
-    copies: z.string().min(1, 'Number of copies is required'),
+    copies: z.number().min(0, 'Copies cannot be negative'),
     department: z.string().min(1, 'Department is required'),
     year: z.string().min(1, 'Year is required'),
     semester: z.string().min(1, 'Semester is required'),
@@ -73,7 +74,7 @@ export function AddBookForm({ onBookAdded, setOpen }: AddBookFormProps) {
       publisher: '',
       isbn: '',
       category: '',
-      copies: '',
+      copies: 1,
       department: '',
       year: '',
       semester: '',
@@ -92,6 +93,7 @@ export function AddBookForm({ onBookAdded, setOpen }: AddBookFormProps) {
     setIsLoading(true);
     const newBook: Omit<Book, 'id'> = {
       ...data,
+      copies: `${data.copies}/${data.copies}`,
       status: 'available',
       publicationDate: new Date().toISOString().split('T')[0],
       coverImageUrl: `https://picsum.photos/seed/${data.isbn}/300/400`,
@@ -183,17 +185,42 @@ export function AddBookForm({ onBookAdded, setOpen }: AddBookFormProps) {
                 )}
             />
             <FormField
-                control={form.control}
-                name="copies"
-                render={({ field }) => (
+              control={form.control}
+              name="copies"
+              render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Book Copies</FormLabel>
-                    <FormControl>
-                    <Input placeholder="e.g. 5/5" {...field} />
-                    </FormControl>
-                    <FormMessage />
+                  <FormLabel>Book Copies</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-10 w-10"
+                            onClick={() => field.value > 0 && field.onChange(field.value - 1)}
+                        >
+                            <Minus className="h-4 w-4" />
+                        </Button>
+                        <Input
+                            type="number"
+                            {...field}
+                            onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)}
+                            className="text-center"
+                        />
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-10 w-10"
+                            onClick={() => field.onChange(field.value + 1)}
+                        >
+                            <Plus className="h-4 w-4" />
+                        </Button>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
                 </FormItem>
-                )}
+              )}
             />
         </div>
         

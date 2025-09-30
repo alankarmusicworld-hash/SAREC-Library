@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { Minus, Plus } from 'lucide-react';
 
 const departments = [
   'Computer Science',
@@ -51,7 +52,7 @@ const formSchema = z.object({
     publisher: z.string().min(1, 'Publication is required'),
     isbn: z.string().min(1, 'ISBN is required'),
     category: z.string().min(1, 'Category is required'),
-    copies: z.string().min(1, 'Number of copies is required'),
+    copies: z.number().min(0, 'Copies cannot be negative'),
     department: z.string().min(1, 'Department is required'),
     year: z.string().min(1, 'Year is required'),
     semester: z.string().min(1, 'Semester is required'),
@@ -67,6 +68,9 @@ export function EditBookForm({ book, onBookUpdated, setOpen }: EditBookFormProps
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
+  // Extract total copies from "available/total" string
+  const totalCopies = book.copies ? parseInt(book.copies.split('/')[1] || '0', 10) : 0;
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -75,7 +79,7 @@ export function EditBookForm({ book, onBookUpdated, setOpen }: EditBookFormProps
       publisher: book.publisher || '',
       isbn: book.isbn || '',
       category: book.category || '',
-      copies: book.copies || '',
+      copies: isNaN(totalCopies) ? 0 : totalCopies,
       department: book.department || '',
       year: book.year || '',
       semester: book.semester || '',
@@ -88,9 +92,11 @@ export function EditBookForm({ book, onBookUpdated, setOpen }: EditBookFormProps
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
+      const availableCopies = book.copies ? parseInt(book.copies.split('/')[0] || '0', 10) : 0;
       const updatedBook: Book = {
         ...book,
         ...data,
+        copies: `${availableCopies}/${data.copies}`,
       };
 
       onBookUpdated(updatedBook);
@@ -184,17 +190,43 @@ export function EditBookForm({ book, onBookUpdated, setOpen }: EditBookFormProps
                 )}
             />
             <FormField
-                control={form.control}
-                name="copies"
-                render={({ field }) => (
+              control={form.control}
+              name="copies"
+              render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Book Copies</FormLabel>
-                    <FormControl>
-                    <Input placeholder="e.g. 5/5" {...field} />
-                    </FormControl>
-                    <FormMessage />
+                  <FormLabel>Total Book Copies</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-10 w-10"
+                            onClick={() => field.value > 0 && field.onChange(field.value - 1)}
+                        >
+                            <Minus className="h-4 w-4" />
+                        </Button>
+                        <Input
+                            type="number"
+                            {...field}
+                            onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)}
+                            className="text-center"
+                        />
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-10 w-10"
+                            onClick={() => field.onChange(field.value + 1)}
+                        >
+                            <Plus className="h-4 w-4" />
+                        </Button>
+                    </div>
+                  </FormControl>
+                   <p className="text-xs text-muted-foreground">This updates the total number of copies.</p>
+                  <FormMessage />
                 </FormItem>
-                )}
+              )}
             />
         </div>
         
