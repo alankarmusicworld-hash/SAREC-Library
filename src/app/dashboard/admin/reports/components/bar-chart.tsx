@@ -4,7 +4,7 @@
 import { useMemo } from 'react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from "recharts"
 
-const allBooksData = [
+export const mostIssuedBooksData = [
   // Electrical
   { name: "Electrical Machines Ist", total: 8, department: "Electrical" },
   { name: "Power Systems", total: 6, department: "Electrical" },
@@ -42,9 +42,9 @@ export function MostIssuedChart({ department }: MostIssuedChartProps) {
   const data = useMemo(() => {
     let filteredData;
     if (department === 'all') {
-      filteredData = allBooksData;
+      filteredData = mostIssuedBooksData;
     } else {
-      filteredData = allBooksData.filter(book => book.department === department);
+      filteredData = mostIssuedBooksData.filter(book => book.department === department);
     }
     return filteredData.sort((a, b) => b.total - a.total).slice(0, 7);
   }, [department]);

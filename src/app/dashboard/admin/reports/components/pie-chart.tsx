@@ -3,7 +3,7 @@
 
 import { Pie, PieChart, ResponsiveContainer, Tooltip, Cell } from "recharts"
 
-const data = [
+export const issuanceByDeptData = [
   { name: "Electrical", value: 450, color: "hsl(var(--primary))" },
   { name: "Electronics", value: 250, color: "hsl(var(--secondary))" },
   { name: "Computer Science", value: 300, color: "hsl(var(--destructive))" },
@@ -38,7 +38,7 @@ export function IssuancePieChart() {
           formatter={(value, name) => [`${value} issues`, name]}
         />
         <Pie
-          data={data}
+          data={issuanceByDeptData}
           dataKey="value"
           nameKey="name"
           cx="50%"
@@ -49,7 +49,7 @@ export function IssuancePieChart() {
           labelLine={false}
           label={renderCustomizedLabel}
         >
-          {data.map((entry, index) => (
+          {issuanceByDeptData.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={entry.color} stroke="hsl(var(--background))" strokeWidth={2} />
           ))}
         </Pie>

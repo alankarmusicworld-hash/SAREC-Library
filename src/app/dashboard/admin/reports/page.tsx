@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import * as XLSX from 'xlsx';
 import {
     Card,
     CardContent,
@@ -11,13 +12,38 @@ import {
   } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, Printer, BookOpenCheck, Users, CircleDollarSign } from 'lucide-react';
-import { MostIssuedChart } from './components/bar-chart';
-import { IssuancePieChart } from './components/pie-chart';
-import { DailyActivityChart } from './components/daily-activity-chart';
+import { MostIssuedChart, mostIssuedBooksData } from './components/bar-chart';
+import { IssuancePieChart, issuanceByDeptData } from './components/pie-chart';
+import { DailyActivityChart, dailyActivityData } from './components/daily-activity-chart';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
   
 export default function ReportsPage() {
     const [selectedDepartment, setSelectedDepartment] = useState('all');
+
+    const handleDownloadReport = () => {
+        // 1. Prepare data for each sheet
+        const summaryData = [
+            { Metric: "Active Issues", Value: "5", Description: "Currently borrowed books" },
+            { Metric: "Total Members", Value: "9", Description: "Students & Librarians" },
+            { Metric: "Total Fines Collected", Value: "₹85.00", Description: "From all paid fines" },
+        ];
+        
+        // 2. Create workbook and worksheets
+        const wb = XLSX.utils.book_new();
+        const summaryWs = XLSX.utils.json_to_sheet(summaryData);
+        const mostIssuedWs = XLSX.utils.json_to_sheet(mostIssuedBooksData);
+        const issuanceDeptWs = XLSX.utils.json_to_sheet(issuanceByDeptData);
+        const dailyActivityWs = XLSX.utils.json_to_sheet(dailyActivityData);
+
+        // 3. Append worksheets to the workbook
+        XLSX.utils.book_append_sheet(wb, summaryWs, "Summary Metrics");
+        XLSX.utils.book_append_sheet(wb, mostIssuedWs, "Most Issued Books");
+        XLSX.utils.book_append_sheet(wb, issuanceDeptWs, "Issuance by Department");
+        XLSX.utils.book_append_sheet(wb, dailyActivityWs, "Daily Activity");
+        
+        // 4. Trigger download
+        XLSX.writeFile(wb, "library_report.xlsx");
+    }
 
     return (
         <div className="flex flex-col gap-6">
@@ -27,7 +53,7 @@ export default function ReportsPage() {
                     <p className="text-muted-foreground">An overview of library activity and key metrics.</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={handleDownloadReport}>
                         <Download className="mr-2 h-4 w-4" />
                         Download Report
                     </Button>
@@ -73,8 +99,10 @@ export default function ReportsPage() {
 
             <div className="grid gap-6 lg:grid-cols-2">
                 <Card>
-                    <CardHeader className="flex items-center justify-between">
-                        <CardTitle>Most Issued Books</CardTitle>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>Most Issued Books</CardTitle>
+                        </div>
                         <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
                             <SelectTrigger className="w-[200px]">
                                 <SelectValue placeholder="Select Department" />

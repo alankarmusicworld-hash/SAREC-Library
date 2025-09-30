@@ -3,7 +3,7 @@
 
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from "recharts"
 
-const data = [
+export const dailyActivityData = [
   { date: "Jul 20", issued: 3, returned: 1, fines: 50 },
   { date: "Jul 21", issued: 4, returned: 2, fines: 25 },
   { date: "Jul 22", issued: 2, returned: 3, fines: 75 },
@@ -16,7 +16,7 @@ const data = [
 export function DailyActivityChart() {
   return (
     <ResponsiveContainer width="100%" height={350}>
-      <LineChart data={data}>
+      <LineChart data={dailyActivityData}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis
           dataKey="date"
