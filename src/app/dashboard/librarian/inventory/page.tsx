@@ -164,12 +164,12 @@ export default function InventoryManagementPage() {
                  }
                  const newBook: Omit<Book, 'id'> = {
                     title: bookTitle,
-                    author: row['Author'] || row['author'],
-                    publisher: row['Publication'] || row['publisher'],
-                    isbn: row['ISBN'] || row['isbn'],
-                    category: row['Category'] || row['category'],
-                    copies: row['Copies'] || row['copies'],
-                    department: row['Department'] || row['department'],
+                    author: (row['Author'] || row['author']) || '',
+                    publisher: (row['Publication'] || row['publisher']) || '',
+                    isbn: (row['ISBN'] || row['isbn']) || '',
+                    category: (row['Category'] || row['category']) || '',
+                    copies: (row['Copies'] || row['copies']) || '',
+                    department: (row['Department'] || row['department']) || '',
                     status: 'available',
                     publicationDate: new Date().toISOString().split('T')[0],
                     coverImageUrl: `https://picsum.photos/seed/${row['ISBN'] || `new${importedCount}`}/300/400`,
@@ -547,4 +547,6 @@ export default function InventoryManagementPage() {
 }
 
     
+    
+
     
