@@ -40,7 +40,7 @@ const navItemsByRole: Record<string, NavItem[]> = {
       { href: '/dashboard/student/reservations', label: 'Reservations', icon: CalendarClock },
       { href: '/dashboard/admin/fines', label: 'Fines', icon: CircleDollarSign },
       { href: '/dashboard/admin/reports', label: 'Reports', icon: AreaChart },
-      { href: '#', label: 'Settings', icon: Settings },
+      { href: '/dashboard/admin/settings', label: 'Settings', icon: Settings },
     ],
   librarian: [
     { href: '/dashboard/librarian/inventory', label: 'Catalog', icon: BookCopy },
