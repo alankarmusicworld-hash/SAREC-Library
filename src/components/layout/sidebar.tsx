@@ -19,8 +19,11 @@ import {
   History
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 import { cn } from '@/lib/utils';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 type NavItem = {
   href: string;
@@ -101,19 +104,40 @@ const NavContent = () => {
 
 export default function Sidebar() {
     const [userRole, setUserRole] = useState<string | null>(null);
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
     useEffect(() => {
         if (typeof window !== 'undefined') {
-        const role = localStorage.getItem('userRole');
-        setUserRole(role);
+          const role = localStorage.getItem('userRole');
+          setUserRole(role);
         }
+
+        async function fetchLogo() {
+            const settingsRef = doc(db, 'settings', 'libraryConfig');
+            try {
+                const docSnap = await getDoc(settingsRef);
+                if (docSnap.exists() && docSnap.data().logoUrl) {
+                    setLogoUrl(docSnap.data().logoUrl);
+                }
+            } catch (error) {
+                console.error("Could not fetch library logo:", error);
+            }
+        }
+        fetchLogo();
+
     }, []);
+
   return (
       <div className="hidden border-r bg-background md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-              <div className="bg-primary text-primary-foreground p-2 rounded-lg">
-                <Library className="h-6 w-6" />
+              <div className="bg-primary text-primary-foreground p-2 rounded-lg flex items-center justify-center h-10 w-10">
+                {logoUrl ? (
+                    <Image src={logoUrl} alt="Library Logo" width={24} height={24} className="object-contain" />
+                ) : (
+                    <Library className="h-6 w-6" />
+                )}
               </div>
               <div>
                 <span className="text-lg">SAREC Library</span>
