@@ -45,9 +45,13 @@ export default function ReportsPage() {
         XLSX.writeFile(wb, "library_report.xlsx");
     }
 
+    const handlePrintReport = () => {
+        window.print();
+    }
+
     return (
-        <div className="flex flex-col gap-6">
-            <div className="flex justify-between items-center">
+        <div id="printable-area" className="flex flex-col gap-6">
+            <div className="flex justify-between items-center print-hide">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Library Reports & Analytics</h1>
                     <p className="text-muted-foreground">An overview of library activity and key metrics.</p>
@@ -57,7 +61,7 @@ export default function ReportsPage() {
                         <Download className="mr-2 h-4 w-4" />
                         Download Report
                     </Button>
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={handlePrintReport}>
                         <Printer className="mr-2 h-4 w-4" />
                         Print Report
                     </Button>
@@ -104,7 +108,7 @@ export default function ReportsPage() {
                             <CardTitle>Most Issued Books</CardTitle>
                         </div>
                         <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                            <SelectTrigger className="w-[200px]">
+                            <SelectTrigger className="w-[200px] print-hide">
                                 <SelectValue placeholder="Select Department" />
                             </SelectTrigger>
                             <SelectContent>
