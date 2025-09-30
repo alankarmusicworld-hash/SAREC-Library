@@ -149,7 +149,7 @@ export default function InventoryManagementPage() {
   
   const departmentFilteredData = useMemo(() => {
     if (!deptFilter && !yearFilter && !semesterFilter) {
-      return [];
+      return data; // Show all books if no filters are applied
     }
     
     return data.filter(book => {
@@ -641,6 +641,8 @@ export default function InventoryManagementPage() {
     </Card>
   );
 }
+
+    
 
     
 
