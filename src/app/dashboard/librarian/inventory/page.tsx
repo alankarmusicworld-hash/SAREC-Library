@@ -41,6 +41,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
+const departments = [
+  'Computer Science',
+  'Electrical Engineering',
+  'Electronics Engineering',
+  'Information Technology',
+  'Mechanical Engineering',
+  'Civil Engineering',
+  'General',
+];
+const years = ['1st', '2nd', '3rd', '4th'];
+const semesterOptions: Record<string, string[]> = {
+  '1st': ['1', '2'],
+  '2nd': ['3', '4'],
+  '3rd': ['5', '6'],
+  '4th': ['7', '8'],
+};
+
 export default function InventoryManagementPage() {
   const [data, setData] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,6 +71,11 @@ export default function InventoryManagementPage() {
   const [selectedAuthor, setSelectedAuthor] = useState('');
   const [selectedPublisher, setSelectedPublisher] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  
+  const [deptFilter, setDeptFilter] = useState('');
+  const [yearFilter, setYearFilter] = useState('');
+  const [semesterFilter, setSemesterFilter] = useState('');
+  
   const { toast } = useToast();
   
   useEffect(() => {
@@ -125,6 +147,23 @@ export default function InventoryManagementPage() {
     return filtered;
   }, [data, searchQuery, selectedAuthor, selectedPublisher, selectedCategory]);
   
+  const departmentFilteredData = useMemo(() => {
+    return data.filter(book => {
+        const departmentMatch = deptFilter ? book.department === deptFilter : true;
+        const yearMatch = yearFilter ? book.year === yearFilter : true;
+        const semesterMatch = semesterFilter ? book.semester === semesterFilter : true;
+        return departmentMatch && yearMatch && semesterMatch;
+    });
+  }, [data, deptFilter, yearFilter, semesterFilter]);
+
+  const availableSemestersForFilter = yearFilter ? semesterOptions[yearFilter] || [] : [];
+  useEffect(() => {
+      if (yearFilter && !availableSemestersForFilter.includes(semesterFilter)) {
+          setSemesterFilter('');
+      }
+  }, [yearFilter, semesterFilter, availableSemestersForFilter]);
+
+
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -413,131 +452,184 @@ export default function InventoryManagementPage() {
               </Dialog>
             </div>
           </div>
-          <div className="mt-4 flex items-center justify-between gap-4">
-            <Input
-              placeholder="Search by title, ISBN, category..."
-              className="max-w-sm"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <div className="flex items-center gap-2">
-               <Dialog open={isScanDialogOpen} onOpenChange={setScanDialogOpen}>
-                <DialogTrigger asChild>
-                    <Button variant="outline">
-                        <ScanLine className="mr-2 h-4 w-4" />
-                        Scan
-                    </Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Scan Book ISBN</DialogTitle>
-                        <DialogDescription>
-                           Point the camera at the book's QR or barcode to automatically fill in the ISBN.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="my-4">
-                        <div className="relative aspect-video bg-muted rounded-md overflow-hidden border">
-                             <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
-                             <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                                 <div className="w-64 h-32 border-2 border-dashed border-white/80 rounded-lg"/>
-                             </div>
-                        </div>
-                         {hasCameraPermission === false && (
-                            <Alert variant="destructive" className="mt-4">
-                                <AlertTitle>Camera Access Required</AlertTitle>
-                                <AlertDescription>
-                                Please allow camera access in your browser to use this feature.
-                                </AlertDescription>
-                            </Alert>
-                        )}
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="scanned-isbn">Scanned ISBN</Label>
-                        <Input id="scanned-isbn" placeholder="ISBN will appear here" />
-                    </div>
-                    <DialogFooter>
-                        <Button type="button" variant="secondary" onClick={() => setScanDialogOpen(false)}>Cancel</Button>
-                        <Button type="button">Find Book</Button>
-                    </DialogFooter>
-                </DialogContent>
-              </Dialog>
-              <Popover>
-                <PopoverTrigger asChild>
-                    <Button variant="outline">
-                        <Filter className="mr-2 h-4 w-4" />
-                        Filter
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80" align="end">
-                    <div className="grid gap-4">
-                        <div className="space-y-2">
-                            <h4 className="font-medium leading-none">Filter Books</h4>
-                            <p className="text-sm text-muted-foreground">
-                                Refine by author, publication or category.
-                            </p>
-                        </div>
-                        <div className="grid gap-2">
-                            <div className="grid grid-cols-3 items-center gap-4">
-                                <Label htmlFor="author">Author</Label>
-                                <Select onValueChange={setSelectedAuthor} value={selectedAuthor}>
-                                    <SelectTrigger className="col-span-2 h-8">
-                                        <SelectValue placeholder="Select author" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {authors.map(author => (
-                                            <SelectItem key={author} value={author}>{author}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="grid grid-cols-3 items-center gap-4">
-                                <Label htmlFor="publisher">Publication</Label>
-                                <Select onValueChange={setSelectedPublisher} value={selectedPublisher}>
-                                    <SelectTrigger className="col-span-2 h-8">
-                                        <SelectValue placeholder="Select publication" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {publishers.map(publisher => (
-                                            <SelectItem key={publisher} value={publisher}>{publisher}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="grid grid-cols-3 items-center gap-4">
-                                <Label htmlFor="category">Category</Label>
-                                <Select onValueChange={setSelectedCategory} value={selectedCategory}>
-                                    <SelectTrigger className="col-span-2 h-8">
-                                        <SelectValue placeholder="Select category" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {categories.map(category => (
-                                            <SelectItem key={category} value={category}>{category}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <Button variant="ghost" onClick={clearFilters}>Clear Filters</Button>
-                    </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
           <TabsContent value="all-books" className="mt-4">
-            {isLoading ? (
-                <div className="flex justify-center items-center h-64">
-                    <p>Loading books...</p>
-                </div>
-            ) : (
-                <DataTable 
-                    columns={columns({ onBookUpdated: handleBookUpdated, onBookDeleted: handleBookDeleted })} 
-                    data={filteredData} 
+             <div className="mt-4 flex items-center justify-between gap-4">
+                <Input
+                placeholder="Search by title, ISBN, category..."
+                className="max-w-sm"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 />
-            )}
+                <div className="flex items-center gap-2">
+                <Dialog open={isScanDialogOpen} onOpenChange={setScanDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline">
+                            <ScanLine className="mr-2 h-4 w-4" />
+                            Scan
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Scan Book ISBN</DialogTitle>
+                            <DialogDescription>
+                            Point the camera at the book's QR or barcode to automatically fill in the ISBN.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="my-4">
+                            <div className="relative aspect-video bg-muted rounded-md overflow-hidden border">
+                                <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
+                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                    <div className="w-64 h-32 border-2 border-dashed border-white/80 rounded-lg"/>
+                                </div>
+                            </div>
+                            {hasCameraPermission === false && (
+                                <Alert variant="destructive" className="mt-4">
+                                    <AlertTitle>Camera Access Required</AlertTitle>
+                                    <AlertDescription>
+                                    Please allow camera access in your browser to use this feature.
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="scanned-isbn">Scanned ISBN</Label>
+                            <Input id="scanned-isbn" placeholder="ISBN will appear here" />
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="secondary" onClick={() => setScanDialogOpen(false)}>Cancel</Button>
+                            <Button type="button">Find Book</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline">
+                            <Filter className="mr-2 h-4 w-4" />
+                            Filter
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80" align="end">
+                        <div className="grid gap-4">
+                            <div className="space-y-2">
+                                <h4 className="font-medium leading-none">Filter Books</h4>
+                                <p className="text-sm text-muted-foreground">
+                                    Refine by author, publication or category.
+                                </p>
+                            </div>
+                            <div className="grid gap-2">
+                                <div className="grid grid-cols-3 items-center gap-4">
+                                    <Label htmlFor="author">Author</Label>
+                                    <Select onValueChange={setSelectedAuthor} value={selectedAuthor}>
+                                        <SelectTrigger className="col-span-2 h-8">
+                                            <SelectValue placeholder="Select author" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {authors.map(author => (
+                                                <SelectItem key={author} value={author}>{author}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid grid-cols-3 items-center gap-4">
+                                    <Label htmlFor="publisher">Publication</Label>
+                                    <Select onValueChange={setSelectedPublisher} value={selectedPublisher}>
+                                        <SelectTrigger className="col-span-2 h-8">
+                                            <SelectValue placeholder="Select publication" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {publishers.map(publisher => (
+                                                <SelectItem key={publisher} value={publisher}>{publisher}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid grid-cols-3 items-center gap-4">
+                                    <Label htmlFor="category">Category</Label>
+                                    <Select onValueChange={setSelectedCategory} value={selectedCategory}>
+                                        <SelectTrigger className="col-span-2 h-8">
+                                            <SelectValue placeholder="Select category" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {categories.map(category => (
+                                                <SelectItem key={category} value={category}>{category}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <Button variant="ghost" onClick={clearFilters}>Clear Filters</Button>
+                        </div>
+                    </PopoverContent>
+                </Popover>
+                </div>
+            </div>
+            <div className="mt-4">
+                {isLoading ? (
+                    <div className="flex justify-center items-center h-64">
+                        <p>Loading books...</p>
+                    </div>
+                ) : (
+                    <DataTable 
+                        columns={columns({ onBookUpdated: handleBookUpdated, onBookDeleted: handleBookDeleted })} 
+                        data={filteredData} 
+                    />
+                )}
+            </div>
           </TabsContent>
           <TabsContent value="by-department" className="mt-4">
-            <div className="flex flex-col items-center justify-center gap-4 text-center h-64 rounded-md border border-dashed">
-                <p className="text-muted-foreground">Department-wise book listing will be shown here.</p>
+            <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
+                    <div className="flex-1 space-y-2">
+                        <Label>Department</Label>
+                        <Select value={deptFilter} onValueChange={setDeptFilter}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select Department" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="">All Departments</SelectItem>
+                                {departments.map(dep => <SelectItem key={dep} value={dep}>{dep}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="flex-1 space-y-2">
+                        <Label>Year</Label>
+                        <Select value={yearFilter} onValueChange={setYearFilter}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select Year" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="">All Years</SelectItem>
+                                {years.map(y => <SelectItem key={y} value={y}>{y} Year</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="flex-1 space-y-2">
+                        <Label>Semester</Label>
+                        <Select value={semesterFilter} onValueChange={setSemesterFilter} disabled={!yearFilter}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select Semester" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="">All Semesters</SelectItem>
+                                {availableSemestersForFilter.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="pt-5">
+                        <Button onClick={() => { setDeptFilter(''); setYearFilter(''); setSemesterFilter(''); }}>Clear</Button>
+                    </div>
+                </div>
+
+                {isLoading ? (
+                    <div className="flex justify-center items-center h-64">
+                        <p>Loading books...</p>
+                    </div>
+                ) : (
+                    <DataTable 
+                        columns={columns({ onBookUpdated: handleBookUpdated, onBookDeleted: handleBookDeleted })} 
+                        data={departmentFilteredData} 
+                    />
+                )}
             </div>
           </TabsContent>
         </Tabs>
@@ -546,7 +638,4 @@ export default function InventoryManagementPage() {
   );
 }
 
-    
-    
-
-    
+  
