@@ -1,5 +1,10 @@
 
-import { borrowingHistory, books, Book, BorrowingHistory } from '@/lib/data';
+"use client";
+
+import { useEffect, useState } from 'react';
+import { Book, BorrowingHistory } from '@/lib/data';
+import { db } from '@/lib/firebase';
+import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import {
   Card,
   CardContent,
@@ -20,19 +25,58 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type EnrichedHistory = BorrowingHistory & { book: Book | undefined };
 
-async function getHistory(): Promise<EnrichedHistory[]> {
-  // In a real app, you would fetch the history for the logged-in user.
-  // Here we simulate it for user '3' and enrich it with book details.
-  return borrowingHistory
-    .filter((h) => h.userId === '3')
-    .map((historyItem) => ({
-      ...historyItem,
-      book: books.find((b) => b.id === historyItem.bookId),
-    }));
-}
+export default function HistoryPage() {
+  const [history, setHistory] = useState<EnrichedHistory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
-export default async function HistoryPage() {
-  const history = await getHistory();
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedUserId = localStorage.getItem('userId');
+      setUserId(storedUserId);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!userId) {
+        setIsLoading(false);
+        return;
+    }
+
+    setIsLoading(true);
+    const historyQuery = query(collection(db, 'borrowingHistory'), where('userId', '==', userId));
+    
+    const unsubscribe = onSnapshot(historyQuery, async (querySnapshot) => {
+      const historyItems = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      } as BorrowingHistory));
+
+      const enrichedHistory: EnrichedHistory[] = await Promise.all(
+        historyItems.map(async (historyItem) => {
+          let book: Book | undefined = undefined;
+          if (historyItem.bookId) {
+            const bookDocRef = doc(db, 'books', historyItem.bookId);
+            const bookDoc = await getDoc(bookDocRef);
+            if (bookDoc.exists()) {
+              book = { id: bookDoc.id, ...bookDoc.data() } as Book;
+            }
+          }
+          return { ...historyItem, book };
+        })
+      );
+      
+      setHistory(enrichedHistory.sort((a,b) => new Date(b.checkoutDate).getTime() - new Date(a.checkoutDate).getTime()));
+      setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching history: ", error);
+        setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [userId]);
+
+
   const currentlyIssued = history.filter((item) => !item.returnDate);
   const fullHistory = history;
 
@@ -48,7 +92,11 @@ export default async function HistoryPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {items.length > 0 ? (
+          {isLoading ? (
+            <TableRow>
+                <TableCell colSpan={4} className="h-24 text-center">Loading history...</TableCell>
+            </TableRow>
+          ) : items.length > 0 ? (
             items.map((item) => (
               <TableRow key={item.id}>
                 <TableCell className="font-medium">
@@ -100,3 +148,5 @@ export default async function HistoryPage() {
     </Card>
   );
 }
+
+    

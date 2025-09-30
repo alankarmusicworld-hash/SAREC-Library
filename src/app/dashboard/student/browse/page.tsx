@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
-import { books as initialBooks, Book } from '@/lib/data';
+import { Book } from '@/lib/data';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
 import {
@@ -392,4 +392,4 @@ export default function BrowsePage() {
   );
 }
 
-  
+    
