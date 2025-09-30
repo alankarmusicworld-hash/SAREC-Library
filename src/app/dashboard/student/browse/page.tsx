@@ -85,7 +85,7 @@ export default function BrowsePage() {
   const [selectedPublisher, setSelectedPublisher] = useState('');
   const [reservedBookIds, setReservedBookIds] = useState<string[]>([]);
   
-  const [deptFilter, setDeptFilter] = useState('');
+  const [studentDepartment, setStudentDepartment] = useState('');
   const [yearFilter, setYearFilter] = useState('');
   const [semesterFilter, setSemesterFilter] = useState('');
 
@@ -108,6 +108,10 @@ export default function BrowsePage() {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch books.' });
         setIsLoading(false);
     });
+
+    if (typeof window !== 'undefined') {
+        setStudentDepartment(localStorage.getItem('userDepartment') || '');
+    }
 
     const storedReservedBooks = localStorage.getItem('reservedBookIds');
     if (storedReservedBooks) {
@@ -152,13 +156,16 @@ export default function BrowsePage() {
   }, [searchQuery, allBooks, selectedAuthor, selectedPublisher]);
 
   const departmentFilteredData = useMemo(() => {
+    if (!studentDepartment) {
+      return []; // Wait for student department to be loaded
+    }
     return allBooks.filter(book => {
-        const departmentMatch = deptFilter ? book.department === deptFilter : true;
+        const departmentMatch = book.department === studentDepartment;
         const yearMatch = yearFilter ? book.year === yearFilter : true;
         const semesterMatch = semesterFilter ? book.semester === semesterFilter : true;
         return departmentMatch && yearMatch && semesterMatch;
     });
-  }, [allBooks, deptFilter, yearFilter, semesterFilter]);
+  }, [allBooks, studentDepartment, yearFilter, semesterFilter]);
 
   const availableSemestersForFilter = yearFilter ? semesterOptions[yearFilter] || [] : [];
   useEffect(() => {
@@ -343,17 +350,9 @@ export default function BrowsePage() {
            <TabsContent value="department" className="mt-4">
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
-                        <div className="flex-1 space-y-2">
-                            <Label>Department</Label>
-                            <Select value={deptFilter} onValueChange={(value) => setDeptFilter(value === 'all' ? '' : value)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select Department" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Departments</SelectItem>
-                                    {departments.map(dep => <SelectItem key={dep} value={dep}>{dep}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
+                        <div className="flex-1">
+                            <Label className="text-sm text-muted-foreground">Showing books for</Label>
+                            <p className="font-semibold">{studentDepartment || 'Your Department'}</p>
                         </div>
                         <div className="flex-1 space-y-2">
                             <Label>Year</Label>
@@ -380,7 +379,7 @@ export default function BrowsePage() {
                             </Select>
                         </div>
                         <div className="pt-5">
-                            <Button onClick={() => { setDeptFilter(''); setYearFilter(''); setSemesterFilter(''); }}>Clear</Button>
+                            <Button onClick={() => { setYearFilter(''); setSemesterFilter(''); }}>Clear Filters</Button>
                         </div>
                     </div>
                     {renderBooksTable(departmentFilteredData)}
@@ -391,5 +390,7 @@ export default function BrowsePage() {
     </Card>
   );
 }
+
+    
 
     
