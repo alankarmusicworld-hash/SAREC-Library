@@ -39,6 +39,7 @@ import { AddBookForm } from './components/add-book-form';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export default function InventoryManagementPage() {
   const [data, setData] = useState<Book[]>([]);
@@ -162,6 +163,7 @@ export default function InventoryManagementPage() {
                     isbn: row['ISBN'],
                     category: row['Category'],
                     copies: row['Copies'],
+                    department: row['Department'],
                     status: 'available',
                     publicationDate: new Date().toISOString().split('T')[0],
                     coverImageUrl: `https://picsum.photos/seed/${row['ISBN'] || `new${importedCount}`}/300/400`,
@@ -191,7 +193,7 @@ export default function InventoryManagementPage() {
 
   const handleDownloadTemplate = () => {
     const templateData = [
-        {"Book Title": "", "Author": "", "Publication": "", "ISBN": "", "Category": "", "Copies": ""},
+        {"Book Title": "", "Author": "", "Publication": "", "ISBN": "", "Category": "", "Copies": "", "Department": ""},
     ];
     const worksheet = XLSX.utils.json_to_sheet(templateData);
     const workbook = XLSX.utils.book_new();
@@ -320,28 +322,55 @@ export default function InventoryManagementPage() {
                         Import Books
                     </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="sm:max-w-3xl">
                     <DialogHeader>
                         <DialogTitle>Import Books from Excel</DialogTitle>
                         <DialogDescription>
                             Upload an .xlsx or .csv file to bulk-add books to the catalog.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="flex items-center justify-between rounded-lg border border-dashed p-4">
-                            <div>
-                               <h3 className="font-semibold">Download Template</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    Use our template to ensure your data is formatted correctly.
-                                </p>
+                    <div className="space-y-6 py-4">
+                        <div>
+                            <h3 className="font-semibold mb-2">Template Format</h3>
+                            <p className="text-sm text-muted-foreground mb-4">
+                                Your Excel file should have the following columns in this order.
+                            </p>
+                            <div className="rounded-md border">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Book Title</TableHead>
+                                            <TableHead>Author</TableHead>
+                                            <TableHead>Publication</TableHead>
+                                            <TableHead>ISBN</TableHead>
+                                            <TableHead>Category</TableHead>
+                                            <TableHead>Copies</TableHead>
+                                            <TableHead>Department</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        <TableRow>
+                                            <TableCell className="text-muted-foreground text-xs">e.g. The Great Gatsby</TableCell>
+                                            <TableCell className="text-muted-foreground text-xs">e.g. F. Scott Fitzgerald</TableCell>
+                                            <TableCell className="text-muted-foreground text-xs">e.g. Scribner</TableCell>
+                                            <TableCell className="text-muted-foreground text-xs">e.g. 9780743273565</TableCell>
+                                            <TableCell className="text-muted-foreground text-xs">e.g. Fiction</TableCell>
+                                            <TableCell className="text-muted-foreground text-xs">e.g. 5/5</TableCell>
+                                            <TableCell className="text-muted-foreground text-xs">e.g. General</TableCell>
+                                        </TableRow>
+                                    </TableBody>
+                                </Table>
                             </div>
-                            <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
-                                <Download className="mr-2 h-4 w-4" />
-                                Template
-                            </Button>
+                            <div className="mt-4 flex items-center justify-end">
+                                 <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Download Full Template
+                                </Button>
+                            </div>
                         </div>
+
                          <div className="space-y-2">
-                            <Label htmlFor="import-file">Upload File</Label>
+                            <Label htmlFor="import-file" className="font-semibold">Upload File</Label>
                             <Input id="import-file" type="file" accept=".xlsx, .csv" onChange={handleFileChange} />
                              {importFile && (
                                 <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
@@ -510,3 +539,5 @@ export default function InventoryManagementPage() {
     </Card>
   );
 }
+
+    
