@@ -1,8 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
-import { books, Book } from '@/lib/data';
+import { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -19,50 +18,76 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
-type ReservedBook = Book & { reservedAt: Date };
+type Reservation = {
+  id: string;
+  bookTitle: string;
+  studentName: string;
+  department: string;
+  reservationDate: string;
+  status: 'Pending' | 'Issued';
+  priority: 'High' | 'Medium' | 'Low';
+};
 
-export default function ReservationsPage() {
-  const [reservedBooks, setReservedBooks] = useState<ReservedBook[]>([]);
+const initialReservations: Reservation[] = [
+  {
+    id: 'res1',
+    bookTitle: 'The C Programming Language',
+    studentName: 'Riya Sharma',
+    department: 'Computer Science',
+    reservationDate: '28/07/2024',
+    status: 'Pending',
+    priority: 'High',
+  },
+  {
+    id: 'res2',
+    bookTitle: 'The C Programming Language',
+    studentName: 'Rishi',
+    department: 'Electrical Engineering',
+    reservationDate: '24/08/2025',
+    status: 'Pending',
+    priority: 'Medium',
+  },
+   {
+    id: 'res3',
+    bookTitle: 'Data Structures',
+    studentName: 'Aman Verma',
+    department: 'Mechanical Engineering',
+    reservationDate: '22/07/2024',
+    status: 'Pending',
+    priority: 'Medium',
+  },
+   {
+    id: 'res4',
+    bookTitle: 'Digital Electronics',
+    studentName: 'Milind',
+    department: 'Electrical Engineering',
+    reservationDate: '20/07/2024',
+    status: 'Issued',
+    priority: 'Low',
+  },
+];
+
+export default function AdminReservationsPage() {
+  const [reservations, setReservations] = useState<Reservation[]>(initialReservations);
   const { toast } = useToast();
 
-  useEffect(() => {
-    // Load reserved book IDs from localStorage
-    const storedReservedIds = localStorage.getItem('reservedBookIds');
-    if (storedReservedIds) {
-      const reservedIds: string[] = JSON.parse(storedReservedIds);
-      const reservedBooksData = books
-        .filter(book => reservedIds.includes(book.id))
-        .map(book => ({ ...book, reservedAt: new Date() })); // Using current date as placeholder
-      setReservedBooks(reservedBooksData);
-    }
-  }, []);
-
-  const handleCancelReservation = (bookId: string) => {
-    // Update UI state
-    const updatedReservedBooks = reservedBooks.filter(book => book.id !== bookId);
-    setReservedBooks(updatedReservedBooks);
-
-    // Update localStorage
-    const reservedIds = updatedReservedBooks.map(book => book.id);
-    localStorage.setItem('reservedBookIds', JSON.stringify(reservedIds));
-
+  const handleCancelReservation = (reservationId: string, studentName: string, bookTitle: string) => {
+    setReservations(reservations.filter(res => res.id !== reservationId));
     toast({
-      title: 'Reservation Cancelled',
-      description: `Your reservation for "${books.find(b => b.id === bookId)?.title}" has been cancelled.`,
-    });
+        title: "Reservation Cancelled",
+        description: `Reservation for "${bookTitle}" by ${studentName} has been cancelled.`
+    })
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>My Reservations</CardTitle>
+        <CardTitle>Book Reservations</CardTitle>
         <CardDescription>
-          View and manage your book reservations. Reserved books are held for 24 hours.
+          Manage all current book reservations from students.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -70,38 +95,36 @@ export default function ReservationsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Cover</TableHead>
                 <TableHead>Book Title</TableHead>
-                <TableHead>Author</TableHead>
-                <TableHead>Reserved On</TableHead>
+                <TableHead>Student</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Reservation Date</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Action</TableHead>
+                <TableHead>Priority</TableHead>
+                <TableHead>Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {reservedBooks.length > 0 ? (
-                reservedBooks.map((book) => (
-                  <TableRow key={book.id}>
+              {reservations.length > 0 ? (
+                reservations.map((res, index) => (
+                  <TableRow key={res.id}>
+                    <TableCell className="font-medium">{res.bookTitle}</TableCell>
+                    <TableCell>{res.studentName}</TableCell>
+                    <TableCell>{res.department}</TableCell>
+                    <TableCell>{res.reservationDate}</TableCell>
                     <TableCell>
-                      <Image
-                        src={book.coverImageUrl}
-                        alt={book.title}
-                        width={40}
-                        height={60}
-                        className="rounded-sm"
-                      />
+                      <Badge variant={res.status === 'Pending' ? 'outline' : 'secondary'}>{res.status}</Badge>
                     </TableCell>
-                    <TableCell className="font-medium">{book.title}</TableCell>
-                    <TableCell>{book.author}</TableCell>
-                    <TableCell>{format(book.reservedAt, 'PPP')}</TableCell>
                     <TableCell>
-                        <Badge variant="default">Reserved</Badge>
+                      <Badge variant={res.priority === 'High' ? 'destructive' : 'secondary'}>
+                        {index + 1} ({res.priority})
+                      </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell>
                       <Button
                         variant="destructive"
                         size="sm"
-                        onClick={() => handleCancelReservation(book.id)}
+                        onClick={() => handleCancelReservation(res.id, res.studentName, res.bookTitle)}
                       >
                         Cancel
                       </Button>
@@ -110,8 +133,8 @@ export default function ReservationsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
-                    You have no active reservations.
+                  <TableCell colSpan={7} className="h-24 text-center">
+                    No active reservations.
                   </TableCell>
                 </TableRow>
               )}
