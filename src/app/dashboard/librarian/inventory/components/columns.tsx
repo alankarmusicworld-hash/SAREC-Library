@@ -44,7 +44,6 @@ export const columns = ({ onBookUpdated, onBookDeleted }: ColumnsProps): ColumnD
         const copies = row.original.copies;
         if (!copies) return 'N/A';
 
-        // Handle both "5/5" string format and plain numbers
         if (typeof copies === 'string' && copies.includes('/')) {
             const [available, total] = copies.split('/').map(Number);
             return (
@@ -53,12 +52,9 @@ export const columns = ({ onBookUpdated, onBookDeleted }: ColumnsProps): ColumnD
                 </Badge>
             );
         }
-
-        // If it's a number or a string without '/', just display it.
-        // You could add more sophisticated logic here if needed.
-        const numericCopies = Number(copies);
+        
         return (
-             <Badge variant={numericCopies > 0 ? 'secondary' : 'destructive'}>
+             <Badge variant={Number(copies) > 0 ? 'secondary' : 'destructive'}>
                 {copies}
             </Badge>
         )

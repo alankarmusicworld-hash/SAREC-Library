@@ -68,8 +68,7 @@ export function EditBookForm({ book, onBookUpdated, setOpen }: EditBookFormProps
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
-  // Extract total copies from "available/total" string
-  const totalCopies = book.copies ? parseInt(book.copies.split('/')[1] || '0', 10) : 0;
+  const [availableCopies, totalCopies] = book.copies ? book.copies.split('/').map(Number) : [0, 0];
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -92,15 +91,21 @@ export function EditBookForm({ book, onBookUpdated, setOpen }: EditBookFormProps
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      const availableCopies = book.copies ? parseInt(book.copies.split('/')[0] || '0', 10) : 0;
+      const currentAvailable = isNaN(availableCopies) ? 0 : availableCopies;
+      const newTotal = data.copies;
+
+      // Ensure available copies don't exceed new total.
+      // A more complex logic could be to adjust, but for now let's cap it.
+      const finalAvailable = Math.min(currentAvailable, newTotal);
+
       const updatedBook: Book = {
         ...book,
         ...data,
-        copies: `${availableCopies}/${data.copies}`,
+        semester: data.semester,
+        copies: `${finalAvailable}/${newTotal}`,
       };
 
       onBookUpdated(updatedBook);
-      // The toast notification is now handled in the parent component to confirm successful DB update.
       setOpen(false);
 
     } catch (error: any) {
@@ -223,7 +228,7 @@ export function EditBookForm({ book, onBookUpdated, setOpen }: EditBookFormProps
                         </Button>
                     </div>
                   </FormControl>
-                   <p className="text-xs text-muted-foreground">This updates the total number of copies.</p>
+                   <p className="text-xs text-muted-foreground">Available: {availableCopies}. Adjusting total.</p>
                   <FormMessage />
                 </FormItem>
               )}

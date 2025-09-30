@@ -15,8 +15,9 @@ import { DataTable } from './components/data-table';
 import { columns } from './components/columns';
 import { Book, User, BorrowingHistory } from '@/lib/data';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, getDoc, updateDoc, increment, writeBatch } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { useNotifications } from '@/context/NotificationProvider';
 
 export type EnrichedTransaction = BorrowingHistory & {
   book?: Book;
@@ -57,6 +58,8 @@ export default function TransactionPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
+
 
   useEffect(() => {
     setIsLoading(true);
@@ -105,15 +108,43 @@ export default function TransactionPage() {
   }, [searchQuery, allTransactions]);
   
   const handleMarkAsReturned = async (transactionId: string) => {
+    const transaction = allTransactions.find(t => t.id === transactionId);
+    if (!transaction || !transaction.book || !transaction.user) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Transaction details not found.' });
+        return;
+    }
+
+    const { book, user } = transaction;
+    const [available, total] = book.copies?.split('/').map(Number) || [0,0];
+
+    const batch = writeBatch(db);
+
+    // 1. Update transaction status
     const transactionRef = doc(db, 'borrowingHistory', transactionId);
+    batch.update(transactionRef, {
+        status: 'returned',
+        returnDate: new Date().toISOString().split('T')[0]
+    });
+    
+    // 2. Update book copy count
+    const bookRef = doc(db, 'books', book.id!);
+    if (available < total) { // Only increment if not already at max
+        const newCopies = `${available + 1}/${total}`;
+        batch.update(bookRef, { copies: newCopies, status: 'available' });
+    }
+
+    // 3. Update user's issued count
+    const userRef = doc(db, 'users', user.id);
+    batch.update(userRef, { booksIssued: increment(-1) });
+
     try {
-        await updateDoc(transactionRef, {
-            status: 'returned',
-            returnDate: new Date().toISOString().split('T')[0]
-        });
+        await batch.commit();
+
+        addNotification(`Your book "${book.title}" has been successfully returned.`, user.id);
+
         toast({
             title: "Success",
-            description: "Book has been marked as returned."
+            description: `"${book.title}" has been marked as returned.`
         });
     } catch (error) {
         console.error("Error marking as returned: ", error);

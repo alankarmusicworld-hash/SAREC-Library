@@ -93,6 +93,7 @@ export function AddBookForm({ onBookAdded, setOpen }: AddBookFormProps) {
     setIsLoading(true);
     const newBook: Omit<Book, 'id'> = {
       ...data,
+      semester: data.semester,
       copies: `${data.copies}/${data.copies}`,
       status: 'available',
       publicationDate: new Date().toISOString().split('T')[0],
@@ -197,14 +198,14 @@ export function AddBookForm({ onBookAdded, setOpen }: AddBookFormProps) {
                             variant="outline"
                             size="icon"
                             className="h-10 w-10"
-                            onClick={() => field.value > 0 && field.onChange(field.value - 1)}
+                            onClick={() => field.value > 1 && field.onChange(field.value - 1)}
                         >
                             <Minus className="h-4 w-4" />
                         </Button>
                         <Input
                             type="number"
                             {...field}
-                            onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)}
+                            onChange={e => field.onChange(parseInt(e.target.value, 10) || 1)}
                             className="text-center"
                         />
                         <Button

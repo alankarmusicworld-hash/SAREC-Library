@@ -1,11 +1,11 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Book } from '@/lib/data';
+import { Book, User } from '@/lib/data';
 import { addDays, format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,9 +19,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs, doc, writeBatch, Timestamp, increment } from 'firebase/firestore';
+import { useNotifications } from '@/context/NotificationProvider';
 
 const formSchema = z.object({
-    studentId: z.string().min(1, 'Student ID is required'),
+    enrollmentNumber: z.string().min(1, 'Student ID is required'),
 });
 
 interface IssueBookFormProps {
@@ -31,37 +34,89 @@ interface IssueBookFormProps {
 
 export function IssueBookForm({ book, setOpen }: IssueBookFormProps) {
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
   const [isLoading, setIsLoading] = useState(false);
+  const [settings, setSettings] = useState({ loanPeriod: 15 }); // Default loan period
+  
   const issueDate = new Date();
-  const dueDate = addDays(issueDate, 15); // Admin setting can be used here
+  const dueDate = addDays(issueDate, settings.loanPeriod);
+
+  useEffect(() => {
+    async function fetchSettings() {
+        const settingsRef = doc(db, 'settings', 'libraryConfig');
+        const docSnap = await getDoc(settingsRef);
+        if (docSnap.exists()) {
+            setSettings(prev => ({...prev, loanPeriod: Number(docSnap.data().loanPeriod) || 15}));
+        }
+    }
+    fetchSettings();
+  }, []);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      studentId: '',
+      enrollmentNumber: '',
     },
   });
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true);
+
+    const [availableCopies, totalCopies] = book.copies?.split('/').map(Number) || [0, 0];
+
+    if (availableCopies <= 0) {
+        toast({ variant: 'destructive', title: 'Not Available', description: 'This book is currently out of stock.' });
+        setIsLoading(false);
+        return;
+    }
+
     try {
-      // In a real app, you would:
-      // 1. Verify the student ID exists.
-      // 2. Create a new borrowing record.
-      // 3. Update the book's status and copy count.
-      console.log('Issuing Book:', {
-        studentId: data.studentId,
-        bookId: book.id,
-        issueDate: format(issueDate, 'yyyy-MM-dd'),
-        dueDate: format(dueDate, 'yyyy-MM-dd'),
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('enrollmentNumber', '==', data.enrollmentNumber));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        toast({ variant: 'destructive', title: 'Student Not Found', description: `No student found with ID ${data.enrollmentNumber}.` });
+        setIsLoading(false);
+        return;
+      }
+      
+      const studentDoc = querySnapshot.docs[0];
+      const student = { id: studentDoc.id, ...studentDoc.data() } as User;
+      
+      const batch = writeBatch(db);
+
+      // 1. Update book copy count
+      const bookRef = doc(db, 'books', book.id!);
+      const newCopies = `${availableCopies - 1}/${totalCopies}`;
+      batch.update(bookRef, { copies: newCopies, status: (availableCopies - 1) === 0 ? 'checked-out' : 'available' });
+
+      // 2. Update user's issued book count
+      const userRef = doc(db, 'users', student.id);
+      batch.update(userRef, { booksIssued: increment(1) });
+
+      // 3. Create a new borrowing history record
+      const historyRef = doc(collection(db, 'borrowingHistory'));
+      batch.set(historyRef, {
+          userId: student.id,
+          bookId: book.id,
+          checkoutDate: format(issueDate, 'yyyy-MM-dd'),
+          dueDate: format(dueDate, 'yyyy-MM-dd'),
+          returnDate: null,
+          status: 'issued',
+          createdAt: Timestamp.now(),
       });
+      
+      await batch.commit();
+
+      addNotification(`You have successfully issued "${book.title}". Due date is ${format(dueDate, 'PPP')}.`, student.id);
       
       toast({
         title: 'Book Issued!',
-        description: `"${book.title}" has been issued to student ${data.studentId}.`,
+        description: `"${book.title}" has been issued to ${student.name}.`,
       });
       
-      setOpen(false); // Close the dialog on success
+      setOpen(false);
       form.reset();
 
     } catch (error: any) {
@@ -102,7 +157,7 @@ export function IssueBookForm({ book, setOpen }: IssueBookFormProps) {
 
         <FormField
             control={form.control}
-            name="studentId"
+            name="enrollmentNumber"
             render={({ field }) => (
             <FormItem>
                 <FormLabel>Student ID</FormLabel>
