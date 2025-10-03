@@ -32,6 +32,7 @@ type Reservation = {
   department: string;
   reservationDate: string;
   status: 'Pending' | 'Issued';
+  priority?: number;
 };
 
 
@@ -74,6 +75,23 @@ export default function StudentReservationsPage() {
         id: doc.id,
         ...doc.data()
       } as Reservation)).sort((a, b) => new Date(a.reservationDate).getTime() - new Date(b.reservationDate).getTime());
+      
+      if (userRole === 'admin' || userRole === 'librarian') {
+        const reservationsByBook: { [key: string]: Reservation[] } = {};
+        reservationsData.forEach(res => {
+            if (!reservationsByBook[res.bookId]) {
+                reservationsByBook[res.bookId] = [];
+            }
+            reservationsByBook[res.bookId].push(res);
+        });
+
+        Object.values(reservationsByBook).forEach(group => {
+            group.sort((a, b) => new Date(a.reservationDate).getTime() - new Date(b.reservationDate).getTime());
+            group.forEach((res, index) => {
+                res.priority = index + 1;
+            });
+        });
+      }
       
       setReservations(reservationsData);
       setIsLoading(false);
@@ -142,6 +160,7 @@ export default function StudentReservationsPage() {
                     <>
                         <TableHead>Student Name</TableHead>
                         <TableHead>Department</TableHead>
+                        <TableHead>Priority</TableHead>
                     </>
                  )}
                 <TableHead>Reservation Date</TableHead>
@@ -152,7 +171,7 @@ export default function StudentReservationsPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                    <TableCell colSpan={(userRole === 'admin' || userRole === 'librarian') ? 6 : 4} className="h-24 text-center">Loading reservations...</TableCell>
+                    <TableCell colSpan={(userRole === 'admin' || userRole === 'librarian') ? 7 : 4} className="h-24 text-center">Loading reservations...</TableCell>
                 </TableRow>
               ) : reservations.length > 0 ? (
                 reservations.map((res) => (
@@ -162,6 +181,9 @@ export default function StudentReservationsPage() {
                         <>
                             <TableCell>{res.studentName}</TableCell>
                             <TableCell>{res.department}</TableCell>
+                             <TableCell>
+                                {res.priority ? <Badge variant={res.priority === 1 ? 'default' : 'secondary'}>{res.priority}</Badge> : 'N/A'}
+                            </TableCell>
                         </>
                     )}
                     <TableCell>{res.reservationDate}</TableCell>
@@ -181,7 +203,7 @@ export default function StudentReservationsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={(userRole === 'admin' || userRole === 'librarian') ? 6 : 4} className="h-24 text-center">
+                  <TableCell colSpan={(userRole === 'admin' || userRole === 'librarian') ? 7 : 4} className="h-24 text-center">
                     No active reservations found.
                   </TableCell>
                 </TableRow>
