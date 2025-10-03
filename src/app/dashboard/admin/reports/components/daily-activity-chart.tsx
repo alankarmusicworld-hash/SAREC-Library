@@ -3,17 +3,19 @@
 
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from "recharts"
 
-export const dailyActivityData = [
-  { date: "Jul 20", issued: 3, returned: 1, fines: 50 },
-  { date: "Jul 21", issued: 4, returned: 2, fines: 25 },
-  { date: "Jul 22", issued: 2, returned: 3, fines: 75 },
-  { date: "Jul 23", issued: 5, returned: 2, fines: 0 },
-  { date: "Jul 24", issued: 1, returned: 1, fines: 100 },
-  { date: "Jul 25", issued: 6, returned: 4, fines: 15 },
-  { date: "Jul 26", issued: 3, returned: 5, fines: 30 },
-]
+interface DailyActivityChartProps {
+    data: any[];
+}
 
-export function DailyActivityChart() {
+export function DailyActivityChart({ data: dailyActivityData }: DailyActivityChartProps) {
+    if (dailyActivityData.length === 0) {
+      return (
+          <div className="flex items-center justify-center h-[350px]">
+              <p className="text-muted-foreground">No activity data to display for the last 7 days.</p>
+          </div>
+      )
+  }
+
   return (
     <ResponsiveContainer width="100%" height={350}>
       <LineChart data={dailyActivityData}>
@@ -26,16 +28,31 @@ export function DailyActivityChart() {
           axisLine={false}
         />
         <YAxis
+          yAxisId="left"
           stroke="hsl(var(--muted-foreground))"
           fontSize={12}
           tickLine={false}
           axisLine={false}
         />
-        <Tooltip />
+        <YAxis
+          yAxisId="right"
+          orientation="right"
+          stroke="hsl(var(--muted-foreground))"
+          fontSize={12}
+          tickLine={false}
+          axisLine={false}
+        />
+        <Tooltip 
+           contentStyle={{ 
+            background: 'hsl(var(--background))', 
+            border: '1px solid hsl(var(--border))',
+            borderRadius: 'var(--radius)' 
+          }}
+        />
         <Legend />
-        <Line type="monotone" dataKey="issued" stroke="hsl(var(--primary))" name="Books Issued" />
-        <Line type="monotone" dataKey="returned" stroke="hsl(var(--secondary))" name="Books Returned" />
-        <Line type="monotone" dataKey="fines" stroke="hsl(var(--destructive))" name="Fines Collected (₹)" />
+        <Line yAxisId="left" type="monotone" dataKey="issued" stroke="hsl(var(--primary))" name="Books Issued" />
+        <Line yAxisId="left" type="monotone" dataKey="returned" stroke="hsl(var(--secondary))" name="Books Returned" />
+        <Line yAxisId="right" type="monotone" dataKey="fines" stroke="hsl(var(--destructive))" name="Fines Collected (₹)" />
       </LineChart>
     </ResponsiveContainer>
   )

@@ -3,17 +3,17 @@
 
 import { Pie, PieChart, ResponsiveContainer, Tooltip, Cell } from "recharts"
 
-export const issuanceByDeptData = [
-  { name: "Electrical", value: 450, color: "hsl(var(--primary))" },
-  { name: "Electronics", value: 250, color: "hsl(var(--secondary))" },
-  { name: "Computer Science", value: 300, color: "hsl(var(--destructive))" },
-]
+interface IssuancePieChartProps {
+    data: any[];
+}
 
 const RADIAN = Math.PI / 180;
 const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, payload }: any) => {
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  if (percent < 0.05) return null; // Don't render label for small slices
 
   return (
     <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" className="text-xs font-medium">
@@ -24,7 +24,15 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
 };
 
 
-export function IssuancePieChart() {
+export function IssuancePieChart({ data: issuanceByDeptData }: IssuancePieChartProps) {
+    if (issuanceByDeptData.length === 0) {
+      return (
+          <div className="flex items-center justify-center h-[350px]">
+              <p className="text-muted-foreground">No departmental issuance data to display.</p>
+          </div>
+      )
+  }
+
   return (
     <ResponsiveContainer width="100%" height={350}>
       <PieChart>
