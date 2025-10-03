@@ -73,7 +73,7 @@ export default function StudentReservationsPage() {
       const reservationsData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      } as Reservation)).sort((a, b) => new Date(b.reservationDate).getTime() - new Date(a.reservationDate).getTime());
+      } as Reservation)).sort((a, b) => new Date(a.reservationDate).getTime() - new Date(b.reservationDate).getTime());
       
       setReservations(reservationsData);
       setIsLoading(false);
