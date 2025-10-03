@@ -2,7 +2,9 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { books, fines, Book, Fine } from '@/lib/data';
+import { Book, Fine } from '@/lib/data';
+import { db } from '@/lib/firebase';
+import { collection, query, where, onSnapshot, getDoc, doc } from 'firebase/firestore';
 import {
   Card,
   CardContent,
@@ -18,7 +20,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { IndianRupee } from 'lucide-react';
 
@@ -27,22 +28,50 @@ type EnrichedFine = Fine & { book: Book | undefined };
 export default function FinesPage() {
   const [userFines, setUserFines] = useState<EnrichedFine[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // In a real app, you'd get the logged-in user's ID
-    const storedUserId = localStorage.getItem('userId');
-    setUserId(storedUserId);
-
-    if (storedUserId) {
-      const enrichedFines = fines
-        .filter((fine) => fine.userId === storedUserId && fine.status === 'unpaid')
-        .map((fine) => ({
-          ...fine,
-          book: books.find((b) => b.id === fine.bookId),
-        }));
-      setUserFines(enrichedFines);
+    if (typeof window !== 'undefined') {
+      const storedUserId = localStorage.getItem('userId');
+      setUserId(storedUserId);
     }
   }, []);
+
+  useEffect(() => {
+    if (!userId) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    const finesQuery = query(
+      collection(db, 'fines'),
+      where('userId', '==', userId),
+      where('status', '==', 'unpaid')
+    );
+
+    const unsubscribe = onSnapshot(finesQuery, async (querySnapshot) => {
+      const fetchedFines = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Fine));
+      
+      const enrichedFines: EnrichedFine[] = await Promise.all(
+        fetchedFines.map(async (fine) => {
+          let book: Book | undefined = undefined;
+          if (fine.bookId) {
+            const bookDoc = await getDoc(doc(db, 'books', fine.bookId));
+            if (bookDoc.exists()) {
+              book = { id: bookDoc.id, ...bookDoc.data() } as Book;
+            }
+          }
+          return { ...fine, book };
+        })
+      );
+
+      setUserFines(enrichedFines);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [userId]);
 
   const totalFineAmount = userFines.reduce((acc, fine) => acc + fine.amount, 0);
 
@@ -55,7 +84,9 @@ export default function FinesPage() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {userFines.length > 0 ? (
+        {isLoading ? (
+          <div className="text-center p-8">Loading your fines...</div>
+        ) : userFines.length > 0 ? (
             <>
                 <div className="rounded-md border">
                     <Table>

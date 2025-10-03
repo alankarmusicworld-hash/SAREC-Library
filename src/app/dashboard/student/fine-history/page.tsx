@@ -2,7 +2,9 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { books, fines, Book, Fine } from '@/lib/data';
+import { Book, Fine } from '@/lib/data';
+import { db } from '@/lib/firebase';
+import { collection, query, where, onSnapshot, getDoc, doc } from 'firebase/firestore';
 import {
   Card,
   CardContent,
@@ -26,23 +28,46 @@ type EnrichedFine = Fine & { book: Book | undefined };
 export default function FineHistoryPage() {
   const [userFines, setUserFines] = useState<EnrichedFine[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // In a real app, you'd get the logged-in user's ID
-    const storedUserId = localStorage.getItem('userId');
-    setUserId(storedUserId);
-
-    if (storedUserId) {
-      const enrichedFines = fines
-        .filter((fine) => fine.userId === storedUserId)
-        .map((fine) => ({
-          ...fine,
-          book: books.find((b) => b.id === fine.bookId),
-        }))
-        .sort((a, b) => new Date(b.dateIssued).getTime() - new Date(a.dateIssued).getTime());
-      setUserFines(enrichedFines);
+    if (typeof window !== 'undefined') {
+      const storedUserId = localStorage.getItem('userId');
+      setUserId(storedUserId);
     }
   }, []);
+
+  useEffect(() => {
+    if (!userId) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    const finesQuery = query(collection(db, 'fines'), where('userId', '==', userId));
+    
+    const unsubscribe = onSnapshot(finesQuery, async (querySnapshot) => {
+        const fetchedFines = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Fine));
+        
+        const enrichedFines: EnrichedFine[] = await Promise.all(
+            fetchedFines.map(async (fine) => {
+                let book: Book | undefined = undefined;
+                if (fine.bookId) {
+                    const bookDoc = await getDoc(doc(db, 'books', fine.bookId));
+                    if (bookDoc.exists()) {
+                        book = { id: bookDoc.id, ...bookDoc.data() } as Book;
+                    }
+                }
+                return { ...fine, book };
+            })
+        );
+        
+        setUserFines(enrichedFines.sort((a, b) => new Date(b.dateIssued).getTime() - new Date(a.dateIssued).getTime()));
+        setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [userId]);
 
   const totalUnpaid = userFines
     .filter(f => f.status === 'unpaid')
@@ -106,7 +131,11 @@ export default function FineHistoryPage() {
                     </TableRow>
                     </TableHeader>
                     <TableBody>
-                    {userFines.length > 0 ? (
+                    {isLoading ? (
+                        <TableRow>
+                            <TableCell colSpan={6} className="h-24 text-center">Loading fine history...</TableCell>
+                        </TableRow>
+                    ) : userFines.length > 0 ? (
                         userFines.map((fine) => (
                         <TableRow key={fine.id}>
                             <TableCell className="font-medium">
@@ -117,7 +146,7 @@ export default function FineHistoryPage() {
                             <TableCell>₹{fine.amount.toFixed(2)}</TableCell>
                             <TableCell>
                                 <Badge variant={fine.status === 'paid' ? 'secondary' : (fine.status === 'pending-verification' ? 'default' : 'destructive')}>
-                                    {fine.status.charAt(0).toUpperCase() + fine.status.slice(1)}
+                                    {fine.status.charAt(0).toUpperCase() + fine.status.slice(1).replace('-', ' ')}
                                 </Badge>
                             </TableCell>
                             <TableCell>

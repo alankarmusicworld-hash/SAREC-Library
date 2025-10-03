@@ -13,12 +13,12 @@ import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { DataTable } from './components/data-table';
 import { pendingColumns, unpaidColumns, paidColumns } from './components/columns';
-import { Book, User, Fine, books, users, fines } from '@/lib/data';
+import { Book, User, Fine } from '@/lib/data';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useNotifications } from '@/context/NotificationProvider';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, getDoc, updateDoc, writeBatch } from 'firebase/firestore';
 
 
 export type EnrichedFine = Fine & {
@@ -26,13 +26,31 @@ export type EnrichedFine = Fine & {
   user?: User;
 };
 
-// This function now enriches the static data
-function enrichFines(finesData: Fine[]): EnrichedFine[] {
-    return finesData.map(fine => ({
-        ...fine,
-        book: books.find(b => b.id === fine.bookId),
-        user: users.find(u => u.id === fine.userId),
-    }));
+async function enrichFines(finesData: Fine[]): Promise<EnrichedFine[]> {
+  const enrichedFines: EnrichedFine[] = [];
+
+  for (const fine of finesData) {
+    let bookData: Book | undefined = undefined;
+    let userData: User | undefined = undefined;
+
+    if (fine.bookId) {
+      const bookDoc = await getDoc(doc(db, "books", fine.bookId));
+      if (bookDoc.exists()) {
+        bookData = { id: bookDoc.id, ...bookDoc.data() } as Book;
+      }
+    }
+
+    if (fine.userId) {
+      const userDoc = await getDoc(doc(db, "users", fine.userId));
+      if (userDoc.exists()) {
+        userData = { id: userDoc.id, ...userDoc.data() } as User;
+      }
+    }
+    
+    enrichedFines.push({ ...fine, book: bookData, user: userData });
+  }
+
+  return enrichedFines;
 }
 
 
@@ -49,11 +67,28 @@ export default function ManageFinesPage() {
 
   useEffect(() => {
     setIsLoading(true);
-    // Use the static data from data.ts instead of Firestore
-    const enrichedData = enrichFines(fines);
-    setAllFines(enrichedData);
-    setIsLoading(false);
-  }, []);
+    const finesCollectionRef = collection(db, 'fines');
+    const unsubscribe = onSnapshot(finesCollectionRef, async (querySnapshot) => {
+        const finesData = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        } as Fine));
+
+        const enrichedData = await enrichFines(finesData);
+        setAllFines(enrichedData);
+        setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching fines: ", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not fetch fines data.",
+        });
+        setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [toast]);
 
 
   const filteredFines = useMemo(() => {
@@ -71,26 +106,28 @@ export default function ManageFinesPage() {
   }, [searchQuery, allFines, activeTab]);
 
   const handleVerifyPayment = async (fineId: string, verifierRole: 'admin' | 'librarian') => {
-    // This function will now update the local state for demonstration
-    setAllFines(prevFines => {
-        const newFines = prevFines.map(f => {
-            if (f.id === fineId) {
-                const fine = allFines.find(f => f.id === fineId);
-                 if(fine && fine.user && fine.user.id) {
-                    addNotification(`Your fine of ₹${fine.amount} for "${fine.book?.title}" has been verified.`, fine.user.id);
-                 }
-                return { ...f, status: 'paid', paymentDate: new Date().toISOString().split('T')[0], verifiedBy: verifierRole };
-            }
-            return f;
+    const fineRef = doc(db, 'fines', fineId);
+    try {
+        await updateDoc(fineRef, {
+            status: 'paid',
+            paymentDate: new Date().toISOString().split('T')[0],
+            verifiedBy: verifierRole
         });
-        return newFines;
-    });
-
-    const fine = allFines.find(f => f.id === fineId);
-    if (fine && fine.user) {
+        
+        const fine = allFines.find(f => f.id === fineId);
+        if (fine && fine.user && fine.user.id) {
+            addNotification(`Your fine of ₹${fine.amount} for "${fine.book?.title}" has been verified.`, fine.user.id);
+            toast({
+                title: 'Payment Verified',
+                description: `Fine for student ${fine.user.name} has been marked as paid.`
+            });
+        }
+    } catch(error) {
+        console.error("Error verifying payment: ", error);
         toast({
-            title: 'Payment Verified',
-            description: `Fine for student ${fine.user.name} has been marked as paid.`
+            variant: 'destructive',
+            title: 'Verification Failed',
+            description: 'Could not update the fine status.'
         });
     }
   };
