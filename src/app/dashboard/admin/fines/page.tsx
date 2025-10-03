@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useNotifications } from '@/context/NotificationProvider';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, getDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, doc, getDoc, updateDoc } from 'firebase/firestore';
 
 
 export type EnrichedFine = Fine & {

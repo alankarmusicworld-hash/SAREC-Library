@@ -70,7 +70,7 @@ export default function FineHistoryPage() {
   }, [userId]);
 
   const totalUnpaid = userFines
-    .filter(f => f.status === 'unpaid')
+    .filter(f => f.status === 'unpaid' || f.status === 'pending-verification')
     .reduce((acc, fine) => acc + fine.amount, 0);
 
   const totalPaid = userFines
@@ -88,7 +88,7 @@ export default function FineHistoryPage() {
                     <IndianRupee className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold text-destructive">₹{totalUnpaid.toFixed(2)}</div>
+                    <div className={`text-2xl font-bold ${totalUnpaid > 0 ? 'text-destructive' : ''}`}>₹{totalUnpaid.toFixed(2)}</div>
                     <p className="text-xs text-muted-foreground">
                         Total outstanding fine amount
                     </p>
@@ -152,15 +152,22 @@ export default function FineHistoryPage() {
                             <TableCell>
                                 {fine.status === 'paid' ? (
                                 <div className="flex flex-col gap-1 text-xs">
-                                     <div className="flex items-center gap-2">
+                                     <div className="flex items-center gap-2 capitalize">
                                         {fine.paymentMethod === 'online' 
                                             ? <Landmark className="h-3 w-3" /> 
                                             : <HandCoins className="h-3 w-3" />}
                                         <span>Paid via {fine.paymentMethod} on {fine.paymentDate}</span>
                                      </div>
-                                    <span className="text-muted-foreground">
+                                    <span className="text-muted-foreground capitalize">
                                         Verified by {fine.verifiedBy}
                                     </span>
+                                </div>
+                                ) : fine.status === 'pending-verification' ? (
+                                <div className="flex items-center gap-2 text-xs capitalize">
+                                    {fine.paymentMethod === 'online' 
+                                        ? <Landmark className="h-3 w-3" /> 
+                                        : <HandCoins className="h-3 w-3" />}
+                                    <span>{fine.paymentMethod} payment pending</span>
                                 </div>
                                 ) : (
                                 <span className="text-xs text-muted-foreground">Pending Payment</span>
