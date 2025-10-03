@@ -41,10 +41,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDocs, doc, getDoc, limit, orderBy } from 'firebase/firestore';
 import { isAfter } from 'date-fns';
 
 import { useEffect, useState } from 'react';
+import type { BorrowingHistory, Book, User as UserType } from '@/lib/data';
 
 const quickActions = [
   {
@@ -79,20 +80,12 @@ const quickActions = [
   },
 ];
 
-const adminStats = [
-    { title: 'Total Books', value: '324', subtitle: '15 unique titles', icon: BookIcon, color: 'text-green-500' },
-    { title: 'Active Members', value: '7', subtitle: 'All student members', icon: Users2, color: 'text-green-500' },
-    { title: 'Overdue', value: '3', subtitle: 'Auto-reminders enabled', icon: AlarmClockOff, color: 'text-red-500' },
-    { title: 'Issued Today', value: '0', subtitle: 'Peak hours 1-3 PM', icon: BookCheck, color: 'text-orange-500' },
-    { title: 'Pending Fines', value: '0', subtitle: 'Awaiting verification', icon: FileText, color: 'text-blue-500' },
-    { title: 'Reservations', value: '2', subtitle: 'In queue for books', icon: CalendarCheck, color: 'text-purple-500' },
-];
-
-const recentIssues = [
-    { bookTitle: 'Electrical Machines Ist', bookId: '81124932184567', member: 'Milind Lal Gond', memberId: '2412150209004', dueDate: '05/10/2025', status: 'Returned' },
-    { bookTitle: 'Data Structures', bookId: '9780134322474', member: 'Jane Doe', memberId: '2412150209002', dueDate: '2024-07-15', status: 'Overdue' },
-    { bookTitle: 'General English', bookId: '9780199478204', member: 'Milind Lal Gond', memberId: '2412150209004', dueDate: '05/10/2025', status: 'Issued' }
-]
+type EnrichedRecentIssue = BorrowingHistory & {
+  bookTitle?: string;
+  bookId?: string;
+  member?: string;
+  memberId?: string;
+}
 
 export default function DashboardPage() {
     const [userName, setUserName] = useState<string | null>(null);
@@ -104,6 +97,14 @@ export default function DashboardPage() {
     const [overdueBooksCount, setOverdueBooksCount] = useState(0);
     const [outstandingFines, setOutstandingFines] = useState(0);
 
+    // Admin/Librarian specific states
+    const [totalBooks, setTotalBooks] = useState(0);
+    const [activeMembers, setActiveMembers] = useState(0);
+    const [adminOverdue, setAdminOverdue] = useState(0);
+    const [pendingFines, setPendingFines] = useState(0);
+    const [reservationsCount, setReservationsCount] = useState(0);
+    const [recentIssues, setRecentIssues] = useState<EnrichedRecentIssue[]>([]);
+    
     useEffect(() => {
         if (typeof window !== 'undefined') {
             setUserName(localStorage.getItem('userName'));
@@ -114,16 +115,16 @@ export default function DashboardPage() {
         }
     }, []);
 
-    // Real-time listener for student's issued and overdue books
+    // Real-time listener for student's data
     useEffect(() => {
       if (userRole === 'student' && userId) {
+        // Issued & Overdue books
         const historyQuery = query(
           collection(db, 'borrowingHistory'), 
           where('userId', '==', userId),
           where('status', '==', 'issued')
         );
-
-        const unsubscribe = onSnapshot(historyQuery, (querySnapshot) => {
+        const unsubscribeHistory = onSnapshot(historyQuery, (querySnapshot) => {
           const issuedBooks = querySnapshot.docs;
           const overdueCount = issuedBooks.filter(doc => {
             const dueDate = doc.data().dueDate;
@@ -134,20 +135,13 @@ export default function DashboardPage() {
           setOverdueBooksCount(overdueCount);
         });
 
-        return () => unsubscribe();
-      }
-    }, [userRole, userId]);
-
-    // Real-time listener for student's outstanding fines
-    useEffect(() => {
-      if (userRole === 'student' && userId) {
+        // Outstanding fines
         const finesQuery = query(
           collection(db, 'fines'), 
           where('userId', '==', userId),
           where('status', 'in', ['unpaid', 'pending-verification'])
         );
-        
-        const unsubscribe = onSnapshot(finesQuery, (querySnapshot) => {
+        const unsubscribeFines = onSnapshot(finesQuery, (querySnapshot) => {
           let totalFine = 0;
           querySnapshot.forEach(doc => {
             totalFine += doc.data().amount;
@@ -155,12 +149,71 @@ export default function DashboardPage() {
           setOutstandingFines(totalFine);
         });
 
-        return () => unsubscribe();
+        return () => {
+          unsubscribeHistory();
+          unsubscribeFines();
+        };
       }
     }, [userRole, userId]);
 
+    // Real-time listeners for admin/librarian data
+    useEffect(() => {
+      if (userRole === 'admin' || userRole === 'librarian') {
+        const unsubscribers: (() => void)[] = [];
+
+        // Total Books
+        unsubscribers.push(onSnapshot(collection(db, 'books'), snapshot => setTotalBooks(snapshot.size)));
+
+        // Active Members
+        unsubscribers.push(onSnapshot(query(collection(db, 'users'), where('role', '==', 'student')), snapshot => setActiveMembers(snapshot.size)));
+
+        // Overdue Books
+        const overdueQuery = query(collection(db, 'borrowingHistory'), where('status', '==', 'issued'));
+        unsubscribers.push(onSnapshot(overdueQuery, snapshot => {
+          const overdueCount = snapshot.docs.filter(doc => isAfter(new Date(), new Date(doc.data().dueDate))).length;
+          setAdminOverdue(overdueCount);
+        }));
+
+        // Pending Fines
+        unsubscribers.push(onSnapshot(query(collection(db, 'fines'), where('status', '==', 'pending-verification')), snapshot => setPendingFines(snapshot.size)));
+
+        // Reservations
+        unsubscribers.push(onSnapshot(collection(db, 'reservations'), snapshot => setReservationsCount(snapshot.size)));
+
+        // Recent Issues
+        const recentIssuesQuery = query(collection(db, 'borrowingHistory'), orderBy('createdAt', 'desc'), limit(5));
+        unsubscribers.push(onSnapshot(recentIssuesQuery, async (snapshot) => {
+          const issues = snapshot.docs.map(d => ({id: d.id, ...d.data()} as BorrowingHistory));
+          const enrichedIssues: EnrichedRecentIssue[] = await Promise.all(
+            issues.map(async (issue) => {
+              const bookDoc = await getDoc(doc(db, 'books', issue.bookId));
+              const userDoc = await getDoc(doc(db, 'users', issue.userId));
+              return {
+                ...issue,
+                bookTitle: (bookDoc.data() as Book)?.title || 'Unknown Book',
+                bookId: bookDoc.id,
+                member: (userDoc.data() as UserType)?.name || 'Unknown User',
+                memberId: (userDoc.data() as UserType)?.enrollment || userDoc.id,
+              }
+            })
+          );
+          setRecentIssues(enrichedIssues);
+        }));
+
+        return () => unsubscribers.forEach(unsub => unsub());
+      }
+    }, [userRole]);
+
 
     const firstName = userName ? userName.split(' ')[0] : 'User';
+    
+    const adminStats = [
+        { title: 'Total Books', value: totalBooks, icon: BookIcon, color: 'text-green-500' },
+        { title: 'Active Members', value: activeMembers, icon: Users2, color: 'text-green-500' },
+        { title: 'Overdue', value: adminOverdue, icon: AlarmClockOff, color: 'text-red-500' },
+        { title: 'Pending Fines', value: pendingFines, icon: FileText, color: 'text-blue-500' },
+        { title: 'Reservations', value: reservationsCount, icon: CalendarCheck, color: 'text-purple-500' },
+    ];
 
 
   if (userRole === 'student') {
@@ -244,7 +297,7 @@ export default function DashboardPage() {
  if (userRole === 'admin' || userRole === 'librarian') {
     return (
       <div className="flex flex-col gap-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {adminStats.map((stat) => (
               <Card key={stat.title}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -252,8 +305,7 @@ export default function DashboardPage() {
                   <stat.icon className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className={`text-xs ${stat.color || 'text-muted-foreground'}`}>{stat.subtitle}</p>
+                  <div className={`text-2xl font-bold ${stat.value > 0 && stat.color ? stat.color : ''}`}>{stat.value}</div>
                 </CardContent>
               </Card>
             ))}
@@ -272,12 +324,19 @@ export default function DashboardPage() {
                         <TableHead>Member</TableHead>
                         <TableHead>Due Date</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {recentIssues.map((issue, index) => (
-                        <TableRow key={index}>
+                      {recentIssues.length > 0 ? recentIssues.map((issue, index) => {
+                        let status: 'Issued' | 'Returned' | 'Overdue' = 'Issued';
+                        if (issue.returnDate) {
+                          status = 'Returned';
+                        } else if (isAfter(new Date(), new Date(issue.dueDate))) {
+                          status = 'Overdue';
+                        }
+                        
+                        return (
+                        <TableRow key={issue.id}>
                           <TableCell>
                             <div className="font-medium">{issue.bookTitle}</div>
                             <div className="text-xs text-muted-foreground">{issue.bookId}</div>
@@ -289,22 +348,21 @@ export default function DashboardPage() {
                           <TableCell>{issue.dueDate}</TableCell>
                           <TableCell>
                             <Badge variant={
-                                issue.status === 'Issued' ? 'outline' 
-                                : issue.status === 'Overdue' ? 'destructive' 
+                                status === 'Issued' ? 'outline' 
+                                : status === 'Overdue' ? 'destructive' 
                                 : 'secondary'
                             }>
-                                {issue.status}
+                                {status}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right">
-                            {issue.status === 'Issued' || issue.status === 'Overdue' ? (
-                              <Button variant="outline" size="sm">Return</Button>
-                            ) : (
-                              <span className="text-muted-foreground text-sm">Returned</span>
-                            )}
+                        </TableRow>
+                      )}) : (
+                        <TableRow>
+                          <TableCell colSpan={4} className="h-24 text-center">
+                            No recent issues.
                           </TableCell>
                         </TableRow>
-                      ))}
+                      )}
                     </TableBody>
                   </Table>
                 </CardContent>
@@ -323,14 +381,6 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-between rounded-lg bg-muted p-4">
                     <span className="text-sm font-medium">Fine per Day</span>
                     <span className="font-semibold">₹5</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg bg-muted p-4">
-                    <span className="text-sm font-medium">Total Books Issued</span>
-                    <span className="font-semibold">8</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg bg-muted p-4">
-                    <span className="text-sm font-medium">Total Books Returned</span>
-                    <span className="font-semibold">2</span>
                   </div>
                 </CardContent>
               </Card>
