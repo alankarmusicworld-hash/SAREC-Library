@@ -61,9 +61,9 @@ const sharedColumns: ColumnDef<EnrichedFine>[] = [
         }
     },
      {
-        accessorKey: 'dueDate',
-        header: 'Due Date',
-        cell: ({ row }) => format(new Date(row.original.dueDate), 'dd/MM/yyyy')
+        accessorKey: 'dateIssued',
+        header: 'Fine Date',
+        cell: ({ row }) => format(new Date(row.original.dateIssued), 'dd/MM/yyyy')
     },
     {
         accessorKey: 'amount',
