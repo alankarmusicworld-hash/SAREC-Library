@@ -40,6 +40,9 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { db } from '@/lib/firebase';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { isAfter } from 'date-fns';
 
 import { useEffect, useState } from 'react';
 
@@ -94,13 +97,68 @@ const recentIssues = [
 export default function DashboardPage() {
     const [userName, setUserName] = useState<string | null>(null);
     const [userRole, setUserRole] = useState<string | null>(null);
+    const [userId, setUserId] = useState<string | null>(null);
+    
+    // Student specific states
+    const [issuedBooksCount, setIssuedBooksCount] = useState(0);
+    const [overdueBooksCount, setOverdueBooksCount] = useState(0);
+    const [outstandingFines, setOutstandingFines] = useState(0);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
             setUserName(localStorage.getItem('userName'));
-            setUserRole(localStorage.getItem('userRole'));
+            const role = localStorage.getItem('userRole');
+            const id = localStorage.getItem('userId');
+            setUserRole(role);
+            setUserId(id);
         }
     }, []);
+
+    // Real-time listener for student's issued and overdue books
+    useEffect(() => {
+      if (userRole === 'student' && userId) {
+        const historyQuery = query(
+          collection(db, 'borrowingHistory'), 
+          where('userId', '==', userId),
+          where('status', '==', 'issued')
+        );
+
+        const unsubscribe = onSnapshot(historyQuery, (querySnapshot) => {
+          const issuedBooks = querySnapshot.docs;
+          const overdueCount = issuedBooks.filter(doc => {
+            const dueDate = doc.data().dueDate;
+            return isAfter(new Date(), new Date(dueDate));
+          }).length;
+          
+          setIssuedBooksCount(issuedBooks.length);
+          setOverdueBooksCount(overdueCount);
+        });
+
+        return () => unsubscribe();
+      }
+    }, [userRole, userId]);
+
+    // Real-time listener for student's outstanding fines
+    useEffect(() => {
+      if (userRole === 'student' && userId) {
+        const finesQuery = query(
+          collection(db, 'fines'), 
+          where('userId', '==', userId),
+          where('status', 'in', ['unpaid', 'pending-verification'])
+        );
+        
+        const unsubscribe = onSnapshot(finesQuery, (querySnapshot) => {
+          let totalFine = 0;
+          querySnapshot.forEach(doc => {
+            totalFine += doc.data().amount;
+          });
+          setOutstandingFines(totalFine);
+        });
+
+        return () => unsubscribe();
+      }
+    }, [userRole, userId]);
+
 
     const firstName = userName ? userName.split(' ')[0] : 'User';
 
@@ -126,7 +184,7 @@ export default function DashboardPage() {
                     <BookOpenCheck className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">1</div>
+                    <div className="text-2xl font-bold">{issuedBooksCount}</div>
                     <Link href="/dashboard/student/history" className="text-xs text-primary hover:underline">
                         View my books
                     </Link>
@@ -140,7 +198,9 @@ export default function DashboardPage() {
                     <Clock className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold text-destructive">1</div>
+                    <div className={`text-2xl font-bold ${overdueBooksCount > 0 ? 'text-destructive' : ''}`}>
+                      {overdueBooksCount}
+                    </div>
                      <p className="text-xs text-muted-foreground">
                         Check due dates to avoid fines
                     </p>
@@ -154,7 +214,9 @@ export default function DashboardPage() {
                     <IndianRupee className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold text-destructive">₹2065.00</div>
+                    <div className={`text-2xl font-bold ${outstandingFines > 0 ? 'text-destructive' : ''}`}>
+                      ₹{outstandingFines.toFixed(2)}
+                    </div>
                     <Link href="/dashboard/student/fines" className="text-xs text-primary hover:underline">
                         Pay now
                     </Link>
