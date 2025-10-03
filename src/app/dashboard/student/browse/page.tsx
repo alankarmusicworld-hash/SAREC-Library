@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Book } from '@/lib/data';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc } from 'firebase/firestore';
 import {
   Card,
   CardContent,
@@ -85,7 +85,12 @@ export default function BrowsePage() {
   const [selectedPublisher, setSelectedPublisher] = useState('');
   const [reservedBookIds, setReservedBookIds] = useState<string[]>([]);
   
-  const [studentDepartment, setStudentDepartment] = useState('');
+  const [studentInfo, setStudentInfo] = useState({
+      id: '',
+      name: '',
+      department: '',
+  });
+
   const [yearFilter, setYearFilter] = useState('');
   const [semesterFilter, setSemesterFilter] = useState('');
 
@@ -110,7 +115,11 @@ export default function BrowsePage() {
     });
 
     if (typeof window !== 'undefined') {
-        setStudentDepartment(localStorage.getItem('userDepartment') || '');
+        setStudentInfo({
+            id: localStorage.getItem('userId') || '',
+            name: localStorage.getItem('userName') || '',
+            department: localStorage.getItem('userDepartment') || '',
+        });
     }
 
     const storedReservedBooks = localStorage.getItem('reservedBookIds');
@@ -156,16 +165,16 @@ export default function BrowsePage() {
   }, [searchQuery, allBooks, selectedAuthor, selectedPublisher]);
 
   const departmentFilteredData = useMemo(() => {
-    if (!studentDepartment) {
+    if (!studentInfo.department) {
       return []; // Wait for student department to be loaded
     }
     return allBooks.filter(book => {
-        const departmentMatch = book.department === studentDepartment;
+        const departmentMatch = book.department === studentInfo.department;
         const yearMatch = yearFilter ? book.year === yearFilter : true;
         const semesterMatch = semesterFilter ? book.semester === semesterFilter : true;
         return departmentMatch && yearMatch && semesterMatch;
     });
-  }, [allBooks, studentDepartment, yearFilter, semesterFilter]);
+  }, [allBooks, studentInfo.department, yearFilter, semesterFilter]);
 
   const availableSemestersForFilter = yearFilter ? semesterOptions[yearFilter] || [] : [];
   useEffect(() => {
@@ -180,18 +189,45 @@ export default function BrowsePage() {
     setSelectedPublisher('');
   }
 
-  const handleReserve = (book: Book) => {
-    if (!book.id) return;
-    const updatedReservedIds = [...reservedBookIds, book.id];
-    setReservedBookIds(updatedReservedIds);
-    localStorage.setItem('reservedBookIds', JSON.stringify(updatedReservedIds));
-    toast({
-      title: 'Success!',
-      description: `You have reserved "${book.title}".`,
-    });
-    // Assuming the current user ID is 'student-1' for demo purposes
-    addNotification(`Your reservation for "${book.title}" is confirmed.`, 'student-1');
+  const handleReserve = async (book: Book) => {
+    if (!book.id || !studentInfo.id) return;
+    
+    try {
+      // Create a reservation document in Firestore
+      await addDoc(collection(db, 'reservations'), {
+        bookId: book.id,
+        bookTitle: book.title,
+        userId: studentInfo.id,
+        studentName: studentInfo.name,
+        department: studentInfo.department,
+        reservationDate: new Date().toISOString().split('T')[0],
+        status: 'Pending',
+      });
+      
+      // Update local state and localStorage for immediate UI feedback
+      const updatedReservedIds = [...reservedBookIds, book.id];
+      setReservedBookIds(updatedReservedIds);
+      localStorage.setItem('reservedBookIds', JSON.stringify(updatedReservedIds));
+      
+      toast({
+        title: 'Success!',
+        description: `You have reserved "${book.title}".`,
+      });
+      
+      // Notify the current user and admin/librarian
+      addNotification(`Your reservation for "${book.title}" is confirmed.`, studentInfo.id);
+      addNotification(`New reservation for "${book.title}" by ${studentInfo.name}.`, 'admin');
+    
+    } catch (error) {
+      console.error("Error creating reservation: ", error);
+      toast({
+        variant: 'destructive',
+        title: 'Reservation Failed',
+        description: 'Could not create your reservation. Please try again.',
+      });
+    }
   };
+
 
   const renderBooksTable = (booksToRender: Book[]) => (
      <div className="rounded-md border">
@@ -352,7 +388,7 @@ export default function BrowsePage() {
                     <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
                         <div className="flex-1">
                             <Label className="text-sm text-muted-foreground">Showing books for</Label>
-                            <p className="font-semibold">{studentDepartment || 'Your Department'}</p>
+                            <p className="font-semibold">{studentInfo.department || 'Your Department'}</p>
                         </div>
                         <div className="flex-1 space-y-2">
                             <Label>Year</Label>
@@ -390,7 +426,3 @@ export default function BrowsePage() {
     </Card>
   );
 }
-
-    
-
-    
