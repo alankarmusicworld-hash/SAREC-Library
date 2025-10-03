@@ -13,11 +13,13 @@ import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { DataTable } from './components/data-table';
 import { columns } from './components/columns';
-import { Book, User, BorrowingHistory } from '@/lib/data';
+import { Book, User, BorrowingHistory, Fine } from '@/lib/data';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, getDoc, updateDoc, increment, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, doc, getDoc, updateDoc, increment, writeBatch, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useNotifications } from '@/context/NotificationProvider';
+import { differenceInDays, isAfter } from 'date-fns';
+
 
 export type EnrichedTransaction = BorrowingHistory & {
   book?: Book;
@@ -57,11 +59,25 @@ export default function TransactionPage() {
   const [allTransactions, setAllTransactions] = useState<EnrichedTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [librarySettings, setLibrarySettings] = useState({ fineRate: '5' });
   const { toast } = useToast();
   const { addNotification } = useNotifications();
 
 
   useEffect(() => {
+    const fetchSettings = async () => {
+      const settingsRef = doc(db, 'settings', 'libraryConfig');
+      const docSnap = await getDoc(settingsRef);
+      if (docSnap.exists()) {
+        setLibrarySettings(docSnap.data() as { fineRate: string });
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  useEffect(() => {
+    if (!librarySettings.fineRate) return;
+
     setIsLoading(true);
     const historyCollectionRef = collection(db, 'borrowingHistory');
     
@@ -73,6 +89,46 @@ export default function TransactionPage() {
 
         const enrichedData = await getEnrichedTransactions(historyData);
         setAllTransactions(enrichedData);
+        
+        // --- Automatic Fine Generation Logic ---
+        const finesRef = collection(db, 'fines');
+        const fineRate = parseFloat(librarySettings.fineRate) || 5;
+
+        for (const transaction of enrichedData) {
+            if (transaction.status === 'issued' && isAfter(new Date(), new Date(transaction.dueDate))) {
+                const daysOverdue = differenceInDays(new Date(), new Date(transaction.dueDate));
+                if (daysOverdue > 0) {
+                    // Check if an unpaid fine already exists for this book and user
+                    const q = query(finesRef, 
+                        where('userId', '==', transaction.userId), 
+                        where('bookId', '==', transaction.bookId),
+                        where('status', '==', 'unpaid')
+                    );
+                    const existingFines = await getDocs(q);
+
+                    if (existingFines.empty) {
+                        // No unpaid fine exists, so create one.
+                        const newFine: Omit<Fine, 'id'> = {
+                            userId: transaction.userId,
+                            bookId: transaction.bookId,
+                            amount: daysOverdue * fineRate,
+                            reason: 'Late Return',
+                            dateIssued: new Date().toISOString().split('T')[0],
+                            status: 'unpaid',
+                        };
+                        await addDoc(finesRef, newFine);
+                        if (transaction.user?.id) {
+                           addNotification(
+                            `A fine of ₹${newFine.amount.toFixed(2)} has been issued for the late return of "${transaction.book?.title}".`,
+                            transaction.user.id
+                           );
+                        }
+                    }
+                }
+            }
+        }
+        // --- End of Fine Generation Logic ---
+
         setIsLoading(false);
     }, (error) => {
         console.error("Error fetching transactions: ", error);
@@ -85,7 +141,7 @@ export default function TransactionPage() {
     });
 
     return () => unsubscribe();
-  }, [toast]);
+  }, [toast, librarySettings, addNotification]);
 
 
   const filteredTransactions = useMemo(() => {
@@ -115,7 +171,16 @@ export default function TransactionPage() {
     }
 
     const { book, user } = transaction;
-    const [available, total] = book.copies?.split('/').map(Number) || [0,0];
+    
+    let available, total;
+    if (typeof book.copies === 'string' && book.copies.includes('/')) {
+        [available, total] = book.copies.split('/').map(Number);
+    } else {
+        // Fallback for older data format
+        const numCopies = Number(book.copies) || 0;
+        available = numCopies; // Assume all were available if format is wrong
+        total = numCopies;
+    }
 
     const batch = writeBatch(db);
 
@@ -161,7 +226,7 @@ export default function TransactionPage() {
       <CardHeader>
         <CardTitle>Issues & Returns</CardTitle>
         <CardDescription>
-          Track all currently issued books and manage returns.
+          Track all currently issued books and manage returns. Overdue books automatically generate fines.
         </CardDescription>
       </CardHeader>
       <CardContent>

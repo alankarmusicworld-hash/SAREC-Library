@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { isAfter } from 'date-fns';
 
 type EnrichedHistory = BorrowingHistory & { book: Book | undefined };
 
@@ -97,20 +98,37 @@ export default function HistoryPage() {
                 <TableCell colSpan={4} className="h-24 text-center">Loading history...</TableCell>
             </TableRow>
           ) : items.length > 0 ? (
-            items.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="font-medium">
-                  {item.book?.title || 'Unknown Book'}
-                </TableCell>
-                <TableCell>{item.checkoutDate}</TableCell>
-                <TableCell>{item.dueDate}</TableCell>
-                <TableCell>
-                  <Badge variant={item.returnDate ? 'secondary' : 'outline'}>
-                    {item.returnDate ? `Returned on ${item.returnDate}` : 'Issued'}
-                  </Badge>
-                </TableCell>
-              </TableRow>
-            ))
+            items.map((item) => {
+              const isOverdue = !item.returnDate && isAfter(new Date(), new Date(item.dueDate));
+              
+              let statusText = `Returned on ${item.returnDate}`;
+              let statusVariant: 'secondary' | 'outline' | 'destructive' = 'secondary';
+              
+              if (!item.returnDate) {
+                  if (isOverdue) {
+                      statusText = 'Overdue';
+                      statusVariant = 'destructive';
+                  } else {
+                      statusText = 'Issued';
+                      statusVariant = 'outline';
+                  }
+              }
+
+              return (
+                <TableRow key={item.id}>
+                  <TableCell className="font-medium">
+                    {item.book?.title || 'Unknown Book'}
+                  </TableCell>
+                  <TableCell>{item.checkoutDate}</TableCell>
+                  <TableCell>{item.dueDate}</TableCell>
+                  <TableCell>
+                    <Badge variant={statusVariant}>
+                      {statusText}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              )
+            })
           ) : (
             <TableRow>
               <TableCell colSpan={4} className="h-24 text-center">
@@ -148,5 +166,3 @@ export default function HistoryPage() {
     </Card>
   );
 }
-
-    
