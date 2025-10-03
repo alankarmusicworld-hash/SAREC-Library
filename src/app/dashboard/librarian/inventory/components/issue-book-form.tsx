@@ -108,7 +108,15 @@ export function IssueBookForm({ book, setOpen }: IssueBookFormProps) {
         return;
     }
 
-    const [availableCopies, totalCopies] = book.copies?.split('/').map(Number) || [0, 0];
+    let availableCopies, totalCopies;
+    if (typeof book.copies === 'string' && book.copies.includes('/')) {
+        [availableCopies, totalCopies] = book.copies.split('/').map(Number);
+    } else {
+        const numCopies = Number(book.copies) || 0;
+        availableCopies = numCopies;
+        totalCopies = numCopies;
+    }
+
 
     if (availableCopies <= 0) {
         toast({ variant: 'destructive', title: 'Not Available', description: 'This book is currently out of stock.' });
