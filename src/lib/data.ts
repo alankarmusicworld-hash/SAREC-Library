@@ -50,6 +50,7 @@ export type Fine = {
   paymentDate?: string | null;
   paymentMethod?: 'cash' | 'online' | null;
   verifiedBy?: 'admin' | 'librarian' | null;
+  transactionId?: string;
 };
 
 

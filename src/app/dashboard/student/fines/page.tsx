@@ -33,11 +33,13 @@ import {
   DialogFooter,
   DialogClose
 } from '@/components/ui/dialog';
-import { HandCoins, Landmark, QrCode } from 'lucide-react';
+import { HandCoins, Landmark, QrCode, Download, Copy, Check } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { useNotifications } from '@/context/NotificationProvider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 
 type EnrichedFine = Fine & { book: Book | undefined };
@@ -56,6 +58,9 @@ export default function FinesPage() {
   const [paymentStep, setPaymentStep] = useState<'selection' | 'online' | 'cash'>('selection');
   const [settings, setSettings] = useState<LibrarySettings>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [transactionId, setTransactionId] = useState('');
+  const [isCopied, setIsCopied] = useState(false);
+
 
   const { toast } = useToast();
   const { addNotification } = useNotifications();
@@ -129,16 +134,19 @@ export default function FinesPage() {
 
       userFines.forEach(fine => {
           const fineRef = doc(db, 'fines', fine.id);
-          batch.update(fineRef, {
+          const updateData: {status: string, paymentMethod: string, transactionId?: string} = {
               status: 'pending-verification',
               paymentMethod: method,
-          });
+          }
+          if (method === 'online' && transactionId) {
+              updateData.transactionId = transactionId;
+          }
+          batch.update(fineRef, updateData);
       });
 
       try {
         await batch.commit();
         
-        // Notify admin - assuming 'admin' is a generic target for all admins/librarians
         addNotification(`New payment of ₹${totalFineAmount.toFixed(2)} is pending verification.`, 'admin');
 
         toast({
@@ -148,6 +156,7 @@ export default function FinesPage() {
 
         setIsDialogOpen(false);
         setPaymentStep('selection');
+        setTransactionId('');
 
       } catch (error) {
           console.error("Error submitting payment: ", error);
@@ -160,6 +169,26 @@ export default function FinesPage() {
           setIsSubmitting(false);
       }
   }
+
+    const handleCopy = () => {
+        if (settings.upiId) {
+            navigator.clipboard.writeText(settings.upiId);
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000);
+        }
+    };
+    
+    const handleDownloadQr = () => {
+        if (settings.qrCodeUrl) {
+            const link = document.createElement('a');
+            link.href = settings.qrCodeUrl;
+            link.download = 'sarec_library_upi_qr.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }
+
 
   const renderPaymentContent = () => {
     switch (paymentStep) {
@@ -174,19 +203,39 @@ export default function FinesPage() {
                     </DialogHeader>
                     <div className="my-6 flex flex-col items-center gap-4">
                         {settings.qrCodeUrl ? (
-                             <div className="p-4 border rounded-lg bg-background">
+                             <div className="p-4 border rounded-lg bg-background relative group">
                                 <Image src={settings.qrCodeUrl} alt="UPI QR Code" width={200} height={200} />
+                                <Button size="sm" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleDownloadQr}>
+                                    <Download className="h-4 w-4 mr-2" /> Download
+                                </Button>
                             </div>
                         ) : (
                             <div className="w-48 h-48 bg-muted rounded-lg flex items-center justify-center">
                                 <QrCode className="w-16 h-16 text-muted-foreground" />
                             </div>
                         )}
-                        <p className="font-semibold text-lg">{settings.upiId || 'UPI ID not configured'}</p>
+                        <div className="flex items-center gap-2 rounded-md border bg-muted px-3 py-2">
+                            <p className="font-semibold text-lg">{settings.upiId || 'UPI ID not configured'}</p>
+                            <Button variant="ghost" size="icon" onClick={handleCopy}>
+                                {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                            </Button>
+                        </div>
                     </div>
-                    <DialogFooter className="sm:justify-between items-center">
+                     <div className="space-y-2 mb-4">
+                        <Label htmlFor="transactionId">Payment Transaction ID</Label>
+                        <Input 
+                            id="transactionId" 
+                            placeholder="Enter the UTR/Transaction ID from your payment app"
+                            value={transactionId}
+                            onChange={(e) => setTransactionId(e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            This is required to verify your payment.
+                        </p>
+                    </div>
+                    <DialogFooter className="sm:justify-between items-center mt-6">
                         <Button variant="ghost" onClick={() => setPaymentStep('selection')}>Back</Button>
-                        <Button onClick={() => handlePayment('online')} disabled={isSubmitting}>
+                        <Button onClick={() => handlePayment('online')} disabled={isSubmitting || !transactionId}>
                             {isSubmitting ? 'Submitting...' : 'I Have Paid'}
                         </Button>
                     </DialogFooter>
@@ -299,7 +348,10 @@ export default function FinesPage() {
                     </div>
                     <Dialog open={isDialogOpen} onOpenChange={(open) => {
                         setIsDialogOpen(open);
-                        if (!open) setPaymentStep('selection');
+                        if (!open) {
+                            setPaymentStep('selection');
+                            setTransactionId('');
+                        }
                     }}>
                         <DialogTrigger asChild>
                              <Button size="lg">

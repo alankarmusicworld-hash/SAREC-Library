@@ -8,6 +8,8 @@ import { CellAction } from './cell-action';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { HandCoins, Landmark } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 type ColumnsProps = {
   onVerify: (fineId: string, verifierRole: 'admin' | 'librarian') => void;
@@ -17,6 +19,26 @@ const getInitials = (name: string | undefined) => {
     if (!name) return '';
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
 };
+
+const TransactionIdCell = ({ transactionId }: { transactionId?: string }) => {
+    const { toast } = useToast();
+    const handleCopy = () => {
+        if(transactionId) {
+            navigator.clipboard.writeText(transactionId);
+            toast({ title: "Copied!", description: "Transaction ID copied to clipboard." });
+        }
+    }
+    if (!transactionId) return null;
+
+    return (
+        <div className="text-xs text-muted-foreground flex items-center gap-2">
+            <span>ID: {transactionId.substring(0,12)}...</span>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopy}>
+                <Landmark className="h-3 w-3" />
+            </Button>
+        </div>
+    )
+}
 
 const sharedColumns: ColumnDef<EnrichedFine>[] = [
     {
@@ -78,9 +100,12 @@ export const pendingColumns = ({ onVerify }: ColumnsProps): ColumnDef<EnrichedFi
         accessorKey: 'paymentMethod',
         header: 'Method',
         cell: ({ row }) => (
-            <div className="capitalize flex items-center gap-2">
-                {row.original.paymentMethod === 'online' ? <Landmark className="h-4 w-4 text-muted-foreground" /> : <HandCoins className="h-4 w-4 text-muted-foreground" />}
-                {row.original.paymentMethod}
+            <div>
+                <div className="capitalize flex items-center gap-2">
+                    {row.original.paymentMethod === 'online' ? <Landmark className="h-4 w-4 text-muted-foreground" /> : <HandCoins className="h-4 w-4 text-muted-foreground" />}
+                    {row.original.paymentMethod}
+                </div>
+                {row.original.paymentMethod === 'online' && <TransactionIdCell transactionId={row.original.transactionId} />}
             </div>
         )
     },
@@ -109,9 +134,12 @@ export const paidColumns = (): ColumnDef<EnrichedFine>[] => [
         accessorKey: 'paymentMethod',
         header: 'Payment Method',
         cell: ({ row }) => (
-            <div className="capitalize flex items-center gap-2">
-                {row.original.paymentMethod === 'online' ? <Landmark className="h-4 w-4 text-muted-foreground" /> : <HandCoins className="h-4 w-4 text-muted-foreground" />}
-                {row.original.paymentMethod}
+             <div>
+                <div className="capitalize flex items-center gap-2">
+                    {row.original.paymentMethod === 'online' ? <Landmark className="h-4 w-4 text-muted-foreground" /> : <HandCoins className="h-4 w-4 text-muted-foreground" />}
+                    {row.original.paymentMethod}
+                </div>
+                 {row.original.paymentMethod === 'online' && <TransactionIdCell transactionId={row.original.transactionId} />}
             </div>
         )
     },
