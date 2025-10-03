@@ -2,9 +2,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { users as initialUsers, User } from '@/lib/data';
+import { User } from '@/lib/data';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, deleteDoc, setDoc } from 'firebase/firestore';
 import { DataTable } from './components/data-table';
 import { columns } from './components/columns';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,7 @@ export default function UserManagementPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAddMemberOpen, setAddMemberOpen] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -85,10 +86,53 @@ export default function UserManagementPage() {
   }, [toast, userRole]);
 
   const handleMemberAdded = () => {
-    // The form now handles adding to Firebase and showing toast.
-    // We just need to close the dialog.
     setAddMemberOpen(false);
   };
+  
+  const handleUserUpdated = async (updatedUser: User) => {
+    if (!updatedUser.id) return;
+    const userRef = doc(db, 'users', updatedUser.id);
+    try {
+        const { id, ...userData } = updatedUser;
+        await setDoc(userRef, userData, { merge: true });
+        toast({
+            title: 'User Updated!',
+            description: `${updatedUser.name}'s profile has been updated.`,
+        });
+    } catch (error) {
+        console.error("Error updating user: ", error);
+        toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: "Could not update the user in the database.",
+        });
+    }
+  };
+  
+  const handleUserDeleted = async (userId: string) => {
+     const userRef = doc(db, 'users', userId);
+     try {
+        await deleteDoc(userRef);
+         toast({
+            title: 'User Deleted',
+            description: `The user has been removed from the system.`,
+        });
+     } catch (error) {
+         console.error("Error deleting user: ", error);
+        toast({
+            variant: "destructive",
+            title: "Delete Failed",
+            description: "Could not delete the user from the database.",
+        });
+     }
+  };
+
+  const filteredData = data.filter(user => 
+    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (user.enrollment && user.enrollment.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+  
+  const dynamicColumns = columns({ onUserUpdated: handleUserUpdated, onUserDeleted: handleUserDeleted });
 
   return (
     <Card>
@@ -126,10 +170,12 @@ export default function UserManagementPage() {
             <Input
               placeholder="Search by name or ID..."
               className="pl-10 h-10 max-w-sm"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
         </div>
-        <DataTable columns={columns} data={data} />
+        <DataTable columns={dynamicColumns} data={filteredData} />
       </CardContent>
     </Card>
   );

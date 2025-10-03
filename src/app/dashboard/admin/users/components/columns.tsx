@@ -7,7 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { CellAction } from './cell-action';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-export const columns: ColumnDef<User>[] = [
+type ColumnsProps = {
+  onUserUpdated: (updatedUser: User) => void;
+  onUserDeleted: (userId: string) => void;
+};
+
+export const columns = ({ onUserUpdated, onUserDeleted }: ColumnsProps): ColumnDef<User>[] => [
   {
     id: 'srNo',
     header: 'Sr. No.',
@@ -71,6 +76,6 @@ export const columns: ColumnDef<User>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => <CellAction data={row.original} />,
+    cell: ({ row }) => <CellAction data={row.original} onUserUpdated={onUserUpdated} onUserDeleted={onUserDeleted} />,
   },
 ];
