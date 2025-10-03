@@ -136,7 +136,8 @@ export function AddMemberForm({ onMemberAdded }: AddMemberFormProps) {
         semester: parseInt(data.semester),
         createdAt: new Date(),
         booksIssued: 0,
-        avatar: `https://avatar.vercel.sh/${data.email}.png`
+        avatar: `https://avatar.vercel.sh/${data.email}.png`,
+        password: data.password, // Storing password for testing/visibility as requested
       });
 
       toast({
