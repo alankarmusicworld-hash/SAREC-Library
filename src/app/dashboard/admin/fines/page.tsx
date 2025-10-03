@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { DataTable } from './components/data-table';
 import { pendingColumns, unpaidColumns, paidColumns } from './components/columns';
-import { Book, User, Fine } from '@/lib/data';
+import { Book, User, Fine, books, users, fines } from '@/lib/data';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useNotifications } from '@/context/NotificationProvider';
@@ -24,33 +24,15 @@ import { collection, onSnapshot, doc, getDoc, updateDoc } from 'firebase/firesto
 export type EnrichedFine = Fine & {
   book?: Book;
   user?: User;
-  dueDate: string;
 };
 
-async function fetchReferencedData(finesData: Fine[]): Promise<EnrichedFine[]> {
-    const enrichedFines: EnrichedFine[] = [];
-
-    for (const fine of finesData) {
-        let book: Book | undefined = undefined;
-        let user: User | undefined = undefined;
-        let dueDate: string = 'N/A';
-
-        if(fine.bookId) {
-            const bookDoc = await getDoc(doc(db, "books", fine.bookId));
-            if(bookDoc.exists()) book = { id: bookDoc.id, ...bookDoc.data() } as Book;
-        }
-
-        if(fine.userId) {
-            const userDoc = await getDoc(doc(db, "users", fine.userId));
-            if(userDoc.exists()) user = { id: userDoc.id, ...userDoc.data() } as User;
-        }
-        
-        // This is a simplification. A real app would query the borrowing history.
-        // For now, we'll keep it as N/A or a placeholder.
-        
-        enrichedFines.push({ ...fine, book, user, dueDate });
-    }
-    return enrichedFines;
+// This function now enriches the static data
+function enrichFines(finesData: Fine[]): EnrichedFine[] {
+    return finesData.map(fine => ({
+        ...fine,
+        book: books.find(b => b.id === fine.bookId),
+        user: users.find(u => u.id === fine.userId),
+    }));
 }
 
 
@@ -67,28 +49,11 @@ export default function ManageFinesPage() {
 
   useEffect(() => {
     setIsLoading(true);
-    const finesCollectionRef = collection(db, 'fines');
-    const unsubscribe = onSnapshot(finesCollectionRef, async (querySnapshot) => {
-        const finesData = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        } as Fine));
-
-        const enrichedData = await fetchReferencedData(finesData);
-        setAllFines(enrichedData);
-        setIsLoading(false);
-    }, (error) => {
-        console.error("Error fetching fines: ", error);
-        toast({
-            variant: "destructive",
-            title: "Error fetching data",
-            description: "Could not load fines from the database.",
-        });
-        setIsLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [toast]);
+    // Use the static data from data.ts instead of Firestore
+    const enrichedData = enrichFines(fines);
+    setAllFines(enrichedData);
+    setIsLoading(false);
+  }, []);
 
 
   const filteredFines = useMemo(() => {
@@ -97,8 +62,8 @@ export default function ManageFinesPage() {
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
         filtered = filtered.filter((fine) =>
-            (fine.user?.name.toLowerCase().includes(lowercasedQuery)) ||
-            (fine.book?.title.toLowerCase().includes(lowercasedQuery))
+            (fine.user?.name?.toLowerCase().includes(lowercasedQuery)) ||
+            (fine.book?.title?.toLowerCase().includes(lowercasedQuery))
         );
     }
     
@@ -106,29 +71,26 @@ export default function ManageFinesPage() {
   }, [searchQuery, allFines, activeTab]);
 
   const handleVerifyPayment = async (fineId: string, verifierRole: 'admin' | 'librarian') => {
-    const fineRef = doc(db, 'fines', fineId);
-    try {
-        await updateDoc(fineRef, {
-            status: 'paid',
-            paymentDate: new Date().toISOString().split('T')[0],
-            verifiedBy: verifierRole
+    // This function will now update the local state for demonstration
+    setAllFines(prevFines => {
+        const newFines = prevFines.map(f => {
+            if (f.id === fineId) {
+                const fine = allFines.find(f => f.id === fineId);
+                 if(fine && fine.user && fine.user.id) {
+                    addNotification(`Your fine of ₹${fine.amount} for "${fine.book?.title}" has been verified.`, fine.user.id);
+                 }
+                return { ...f, status: 'paid', paymentDate: new Date().toISOString().split('T')[0], verifiedBy: verifierRole };
+            }
+            return f;
         });
-        
-        const fine = allFines.find(f => f.id === fineId);
-        if(fine && fine.user && fine.user.id) {
-            addNotification(`Your fine of ₹${fine.amount} for "${fine.book?.title}" has been verified.`, fine.user.id);
-            // This toast is for the admin/librarian
-            toast({
-                title: 'Payment Verified',
-                description: `Fine for student ${fine.user.name} has been marked as paid.`
-            });
-        }
-    } catch (error) {
-        console.error("Error verifying payment: ", error);
+        return newFines;
+    });
+
+    const fine = allFines.find(f => f.id === fineId);
+    if (fine && fine.user) {
         toast({
-            variant: 'destructive',
-            title: 'Verification Failed',
-            description: 'Could not update the fine status in the database.'
+            title: 'Payment Verified',
+            description: `Fine for student ${fine.user.name} has been marked as paid.`
         });
     }
   };

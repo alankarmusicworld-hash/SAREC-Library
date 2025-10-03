@@ -29,7 +29,7 @@ export default function FineHistoryPage() {
 
   useEffect(() => {
     // In a real app, you'd get the logged-in user's ID
-    const storedUserId = localStorage.getItem('userId') || '3'; // Default to user '3' for demo
+    const storedUserId = localStorage.getItem('userId');
     setUserId(storedUserId);
 
     if (storedUserId) {
@@ -116,7 +116,7 @@ export default function FineHistoryPage() {
                             <TableCell>{fine.dateIssued}</TableCell>
                             <TableCell>₹{fine.amount.toFixed(2)}</TableCell>
                             <TableCell>
-                                <Badge variant={fine.status === 'paid' ? 'secondary' : 'destructive'}>
+                                <Badge variant={fine.status === 'paid' ? 'secondary' : (fine.status === 'pending-verification' ? 'default' : 'destructive')}>
                                     {fine.status.charAt(0).toUpperCase() + fine.status.slice(1)}
                                 </Badge>
                             </TableCell>
