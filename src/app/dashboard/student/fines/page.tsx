@@ -21,7 +21,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { IndianRupee } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { differenceInDays } from 'date-fns';
 
 type EnrichedFine = Fine & { book: Book | undefined };
 
@@ -74,13 +75,21 @@ export default function FinesPage() {
   }, [userId]);
 
   const totalFineAmount = userFines.reduce((acc, fine) => acc + fine.amount, 0);
+  
+  const getReason = (fine: EnrichedFine) => {
+      if (fine.reason === 'Late Return') {
+          const daysOverdue = differenceInDays(new Date(), new Date(fine.dateIssued));
+          return `Overdue by ${daysOverdue} day(s)`;
+      }
+      return fine.reason;
+  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>My Fines</CardTitle>
+        <CardTitle>Pay Fines</CardTitle>
         <CardDescription>
-          View and pay your outstanding library fines.
+          View and pay your outstanding fines.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -92,36 +101,39 @@ export default function FinesPage() {
                     <Table>
                         <TableHeader>
                         <TableRow>
-                            <TableHead>Book Title</TableHead>
+                            <TableHead>Book Title & ISBN</TableHead>
+                            <TableHead>Author</TableHead>
                             <TableHead>Reason</TableHead>
-                            <TableHead>Date Issued</TableHead>
-                            <TableHead className="text-right">Amount</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Status</TableHead>
                         </TableRow>
                         </TableHeader>
                         <TableBody>
                         {userFines.map((fine) => (
                             <TableRow key={fine.id}>
                             <TableCell className="font-medium">
-                                {fine.book?.title || 'Unknown Book'}
+                                <div>{fine.book?.title || 'Unknown Book'}</div>
+                                <div className="text-sm text-muted-foreground">{fine.book?.isbn}</div>
                             </TableCell>
-                            <TableCell>{fine.reason}</TableCell>
-                            <TableCell>{fine.dateIssued}</TableCell>
-                            <TableCell className="text-right">
+                            <TableCell>{fine.book?.author}</TableCell>
+                            <TableCell>{getReason(fine)}</TableCell>
+                            <TableCell>
                                 ₹{fine.amount.toFixed(2)}
+                            </TableCell>
+                            <TableCell>
+                                <Badge variant="destructive">Unpaid</Badge>
                             </TableCell>
                             </TableRow>
                         ))}
                         </TableBody>
                     </Table>
                 </div>
-                <div className="mt-6 flex justify-end items-center gap-6 p-4 rounded-lg bg-muted">
-                     <div>
-                        <p className="text-lg font-semibold">Total Due</p>
-                        <p className="text-2xl font-bold text-destructive">₹{totalFineAmount.toFixed(2)}</p>
+                <div className="mt-6 flex justify-end items-center gap-6">
+                     <div className="text-right">
+                        <p className="text-lg font-semibold">Total Due: ₹{totalFineAmount.toFixed(2)}</p>
                     </div>
-                    <Button size="lg" className="gap-2">
-                        <IndianRupee />
-                        Pay Total Amount
+                    <Button size="lg">
+                        Pay All Dues
                     </Button>
                 </div>
             </>
