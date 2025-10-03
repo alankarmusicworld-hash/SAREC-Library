@@ -39,24 +39,35 @@ export default function StudentReservationsPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const { toast } = useToast();
 
    useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedUserId = localStorage.getItem('userId');
+      const storedUserRole = localStorage.getItem('userRole');
       setUserId(storedUserId);
+      setUserRole(storedUserRole);
     }
   }, []);
 
   useEffect(() => {
-    if (!userId) {
+    if (!userRole) { // Don't fetch until role is determined
         setIsLoading(false);
         return;
     };
 
     setIsLoading(true);
     const reservationsCollectionRef = collection(db, 'reservations');
-    const q = query(reservationsCollectionRef, where('userId', '==', userId));
+    
+    let q;
+    // Admin/Librarian see all reservations, students only see their own
+    if (userRole === 'admin' || userRole === 'librarian') {
+        q = query(reservationsCollectionRef);
+    } else {
+        q = query(reservationsCollectionRef, where('userId', '==', userId));
+    }
+
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const reservationsData = querySnapshot.docs.map(doc => ({
@@ -77,7 +88,7 @@ export default function StudentReservationsPage() {
     });
 
     return () => unsubscribe();
-  }, [userId, toast]);
+  }, [userId, userRole, toast]);
 
 
   const handleCancelReservation = async (reservationId: string, bookId: string) => {
@@ -85,17 +96,19 @@ export default function StudentReservationsPage() {
     try {
         await deleteDoc(reservationRef);
         
-        // Remove from localStorage as well
-        const storedReservedBooks = localStorage.getItem('reservedBookIds');
-        if (storedReservedBooks) {
-            const reservedIds = JSON.parse(storedReservedBooks) as string[];
-            const updatedIds = reservedIds.filter(id => id !== bookId);
-            localStorage.setItem('reservedBookIds', JSON.stringify(updatedIds));
+        // Remove from localStorage as well, if the user is a student
+        if(userRole === 'student') {
+            const storedReservedBooks = localStorage.getItem('reservedBookIds');
+            if (storedReservedBooks) {
+                const reservedIds = JSON.parse(storedReservedBooks) as string[];
+                const updatedIds = reservedIds.filter(id => id !== bookId);
+                localStorage.setItem('reservedBookIds', JSON.stringify(updatedIds));
+            }
         }
 
         toast({
             title: "Reservation Cancelled",
-            description: `Your reservation has been successfully cancelled.`
+            description: `The reservation has been successfully cancelled.`
         })
     } catch(error) {
         console.error("Error cancelling reservation: ", error);
@@ -107,13 +120,17 @@ export default function StudentReservationsPage() {
     }
   };
 
+  const pageTitle = userRole === 'student' ? 'My Book Reservations' : 'Manage Reservations';
+  const pageDescription = userRole === 'student' 
+    ? 'Here are the books you have currently reserved.' 
+    : 'View and manage all student book reservations.';
+
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>My Book Reservations</CardTitle>
-        <CardDescription>
-          Here are the books you have currently reserved.
-        </CardDescription>
+        <CardTitle>{pageTitle}</CardTitle>
+        <CardDescription>{pageDescription}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
@@ -121,6 +138,12 @@ export default function StudentReservationsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Book Title</TableHead>
+                 {(userRole === 'admin' || userRole === 'librarian') && (
+                    <>
+                        <TableHead>Student Name</TableHead>
+                        <TableHead>Department</TableHead>
+                    </>
+                 )}
                 <TableHead>Reservation Date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Action</TableHead>
@@ -129,12 +152,18 @@ export default function StudentReservationsPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">Loading your reservations...</TableCell>
+                    <TableCell colSpan={(userRole === 'admin' || userRole === 'librarian') ? 6 : 4} className="h-24 text-center">Loading reservations...</TableCell>
                 </TableRow>
               ) : reservations.length > 0 ? (
                 reservations.map((res) => (
                   <TableRow key={res.id}>
                     <TableCell className="font-medium">{res.bookTitle}</TableCell>
+                     {(userRole === 'admin' || userRole === 'librarian') && (
+                        <>
+                            <TableCell>{res.studentName}</TableCell>
+                            <TableCell>{res.department}</TableCell>
+                        </>
+                    )}
                     <TableCell>{res.reservationDate}</TableCell>
                     <TableCell>
                       <Badge variant={res.status === 'Pending' ? 'outline' : 'secondary'}>{res.status}</Badge>
@@ -152,8 +181,8 @@ export default function StudentReservationsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
-                    You have no active reservations.
+                  <TableCell colSpan={(userRole === 'admin' || userRole === 'librarian') ? 6 : 4} className="h-24 text-center">
+                    No active reservations found.
                   </TableCell>
                 </TableRow>
               )}
