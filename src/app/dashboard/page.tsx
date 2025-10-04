@@ -22,6 +22,10 @@ import {
   FileText,
   CalendarCheck,
   BadgeAlert,
+  TrendingUp,
+  ArrowDown,
+  ArrowUp,
+  LineChart,
 } from 'lucide-react';
 import {
   Card,
@@ -42,7 +46,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, getDocs, doc, getDoc, limit, orderBy } from 'firebase/firestore';
-import { isAfter } from 'date-fns';
+import { isAfter, isToday } from 'date-fns';
 
 import { useEffect, useState } from 'react';
 import type { BorrowingHistory, Book, User as UserType } from '@/lib/data';
@@ -98,9 +102,12 @@ export default function DashboardPage() {
     const [outstandingFines, setOutstandingFines] = useState(0);
 
     // Admin/Librarian specific states
-    const [totalBooks, setTotalBooks] = useState(0);
+    const [totalBookCopies, setTotalBookCopies] = useState(0);
+    const [uniqueBookTitles, setUniqueBookTitles] = useState(0);
     const [activeMembers, setActiveMembers] = useState(0);
     const [adminOverdue, setAdminOverdue] = useState(0);
+    const [issuedToday, setIssuedToday] = useState(0);
+    const [returnedToday, setReturnedToday] = useState(0);
     const [pendingFines, setPendingFines] = useState(0);
     const [reservationsCount, setReservationsCount] = useState(0);
     const [recentIssues, setRecentIssues] = useState<EnrichedRecentIssue[]>([]);
@@ -161,17 +168,44 @@ export default function DashboardPage() {
       if (userRole === 'admin' || userRole === 'librarian') {
         const unsubscribers: (() => void)[] = [];
 
-        // Total Books
-        unsubscribers.push(onSnapshot(collection(db, 'books'), snapshot => setTotalBooks(snapshot.size)));
+        // Total Books (Copies and Titles)
+        unsubscribers.push(onSnapshot(collection(db, 'books'), snapshot => {
+            let totalCopies = 0;
+            snapshot.docs.forEach(doc => {
+                const book = doc.data() as Book;
+                if (book.copies && typeof book.copies === 'string') {
+                    const parts = book.copies.split('/');
+                    totalCopies += parseInt(parts[1], 10) || 0;
+                }
+            });
+            setTotalBookCopies(totalCopies);
+            setUniqueBookTitles(snapshot.size);
+        }));
 
         // Active Members
         unsubscribers.push(onSnapshot(query(collection(db, 'users'), where('role', '==', 'student')), snapshot => setActiveMembers(snapshot.size)));
-
-        // Overdue Books
-        const overdueQuery = query(collection(db, 'borrowingHistory'), where('status', '==', 'issued'));
-        unsubscribers.push(onSnapshot(overdueQuery, snapshot => {
-          const overdueCount = snapshot.docs.filter(doc => isAfter(new Date(), new Date(doc.data().dueDate))).length;
-          setAdminOverdue(overdueCount);
+        
+        // Overdue, Issued Today, Returned Today
+        const historyQuery = query(collection(db, 'borrowingHistory'));
+        unsubscribers.push(onSnapshot(historyQuery, snapshot => {
+            let overdueCount = 0;
+            let issuedTodayCount = 0;
+            let returnedTodayCount = 0;
+            snapshot.forEach(doc => {
+                const historyItem = doc.data() as BorrowingHistory;
+                if (historyItem.status === 'issued' && isAfter(new Date(), new Date(historyItem.dueDate))) {
+                    overdueCount++;
+                }
+                if (isToday(new Date(historyItem.checkoutDate))) {
+                    issuedTodayCount++;
+                }
+                if (historyItem.returnDate && isToday(new Date(historyItem.returnDate))) {
+                    returnedTodayCount++;
+                }
+            });
+            setAdminOverdue(overdueCount);
+            setIssuedToday(issuedTodayCount);
+            setReturnedToday(returnedTodayCount);
         }));
 
         // Pending Fines
@@ -206,15 +240,6 @@ export default function DashboardPage() {
 
 
     const firstName = userName ? userName.split(' ')[0] : 'User';
-    
-    const adminStats = [
-        { title: 'Total Books', value: totalBooks, icon: BookIcon, color: 'text-green-500' },
-        { title: 'Active Members', value: activeMembers, icon: Users2, color: 'text-green-500' },
-        { title: 'Overdue', value: adminOverdue, icon: AlarmClockOff, color: 'text-red-500' },
-        { title: 'Pending Fines', value: pendingFines, icon: FileText, color: 'text-blue-500' },
-        { title: 'Reservations', value: reservationsCount, icon: CalendarCheck, color: 'text-purple-500' },
-    ];
-
 
   if (userRole === 'student') {
     return (
@@ -297,18 +322,74 @@ export default function DashboardPage() {
  if (userRole === 'admin' || userRole === 'librarian') {
     return (
       <div className="flex flex-col gap-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            {adminStats.map((stat) => (
-              <Card key={stat.title}>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+              <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                  <stat.icon className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Total Books</CardTitle>
+                  <BookIcon className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className={`text-2xl font-bold ${stat.value > 0 && stat.color ? stat.color : ''}`}>{stat.value}</div>
+                  <div className="text-2xl font-bold">{totalBookCopies}</div>
+                  <p className="text-xs text-muted-foreground">{uniqueBookTitles} unique titles</p>
                 </CardContent>
               </Card>
-            ))}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Active Members</CardTitle>
+                  <Users2 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{activeMembers}</div>
+                   <p className="text-xs text-muted-foreground">All student members</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Overdue</CardTitle>
+                  <AlarmClockOff className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-destructive">{adminOverdue}</div>
+                   <p className="text-xs text-muted-foreground">Auto-reminders enabled</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Issued Today</CardTitle>
+                  <LineChart className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center gap-4">
+                        <div className="text-2xl font-bold flex items-center gap-1 text-sky-500">
+                            <ArrowUp className="h-5 w-5" />{issuedToday}
+                        </div>
+                        <div className="text-2xl font-bold flex items-center gap-1 text-amber-500">
+                             <ArrowDown className="h-5 w-5" />{returnedToday}
+                        </div>
+                    </div>
+                   <p className="text-xs text-muted-foreground">Peak time: 2PM - 4PM</p>
+                </CardContent>
+              </Card>
+               <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Pending Fines</CardTitle>
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-500">{pendingFines}</div>
+                  <p className="text-xs text-muted-foreground">Awaiting verification</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Reservations</CardTitle>
+                  <CalendarCheck className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-purple-500">{reservationsCount}</div>
+                  <p className="text-xs text-muted-foreground">In queue for books</p>
+                </CardContent>
+              </Card>
           </div>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2">
