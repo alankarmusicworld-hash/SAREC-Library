@@ -109,8 +109,7 @@ export default function SettingsPage() {
     event: React.ChangeEvent<HTMLInputElement>,
     path: string,
     setPreview: (url: string | null) => void,
-    setSettingsUrl: (url: string) => void,
-    currentUrl: string | null
+    settingsKey: 'logoUrl' | 'qrCodeUrl'
     ) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -125,7 +124,7 @@ export default function SettingsPage() {
         try {
             await uploadString(storageRef, dataUrl, 'data_url');
             const downloadURL = await getDownloadURL(storageRef);
-            setSettingsUrl(downloadURL);
+            setSettings(p => ({...p, [settingsKey]: downloadURL}));
             toast({
                 title: "Image Uploaded",
                 description: "Image is ready to be saved with settings."
@@ -137,7 +136,8 @@ export default function SettingsPage() {
                 title: 'Upload Failed',
                 description: 'Could not upload image.'
             });
-            setPreview(currentUrl); // Revert preview if upload fails
+            // Revert preview if upload fails
+            setPreview(settings[settingsKey]); 
         }
       };
       reader.readAsDataURL(file);
@@ -238,7 +238,7 @@ export default function SettingsPage() {
                             type="file" 
                             accept="image/*" 
                             className="hidden" 
-                            onChange={(e) => handleImageUpload(e, 'logos/library_logo.png', setLogoPreview, (url) => setSettings(p => ({...p, logoUrl: url})), settings.logoUrl)}
+                            onChange={(e) => handleImageUpload(e, 'logos/library_logo.png', setLogoPreview, 'logoUrl')}
                         />
                         <p className="text-xs text-muted-foreground mt-2">
                             Upload your library's logo (PNG, JPG).
@@ -288,7 +288,7 @@ export default function SettingsPage() {
                             type="file" 
                             accept="image/*" 
                             className="hidden" 
-                            onChange={(e) => handleImageUpload(e, 'qrcodes/upi_qr.png', setQrCodePreview, (url) => setSettings(p => ({...p, qrCodeUrl: url})), settings.qrCodeUrl)}
+                            onChange={(e) => handleImageUpload(e, 'qrcodes/upi_qr.png', setQrCodePreview, 'qrCodeUrl')}
                         />
                         <p className="text-xs text-muted-foreground mt-2">
                             Upload an image of your UPI QR code.
