@@ -54,8 +54,25 @@ const formSchema = z.object({
     category: z.string().min(1, 'Category is required'),
     copies: z.number().min(0, 'Copies cannot be negative'),
     department: z.string().min(1, 'Department is required'),
-    year: z.string().min(1, 'Year is required'),
-    semester: z.string().min(1, 'Semester is required'),
+    year: z.string().optional(),
+    semester: z.string().optional(),
+}).superRefine((data, ctx) => {
+    if (data.department !== 'General') {
+        if (!data.year) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Year is required for this department.',
+                path: ['year'],
+            });
+        }
+        if (!data.semester) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Semester is required for this department.',
+                path: ['semester'],
+            });
+        }
+    }
 });
 
 interface AddBookFormProps {
@@ -82,7 +99,15 @@ export function AddBookForm({ onBookAdded, setOpen }: AddBookFormProps) {
   });
 
   const selectedYear = form.watch('year');
+  const selectedDepartment = form.watch('department');
   const availableSemesters = selectedYear ? semesterOptions[selectedYear] : [];
+
+  useEffect(() => {
+    if (selectedDepartment === 'General') {
+        form.setValue('year', undefined);
+        form.setValue('semester', undefined);
+    }
+  }, [selectedDepartment, form]);
 
   useEffect(() => {
     form.setValue('semester', '');
@@ -93,7 +118,8 @@ export function AddBookForm({ onBookAdded, setOpen }: AddBookFormProps) {
     setIsLoading(true);
     const newBook: Omit<Book, 'id'> = {
       ...data,
-      semester: data.semester,
+      year: data.year || '',
+      semester: data.semester || '',
       copies: `${data.copies}/${data.copies}`,
       status: 'available',
       publicationDate: new Date().toISOString().split('T')[0],
@@ -245,53 +271,56 @@ export function AddBookForm({ onBookAdded, setOpen }: AddBookFormProps) {
             </FormItem>
           )}
         />
+        
+        {selectedDepartment !== 'General' && (
+            <div className="grid grid-cols-2 gap-4">
+            <FormField
+                control={form.control}
+                name="year"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Year</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                        <SelectTrigger>
+                        <SelectValue placeholder="Select year" />
+                        </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        {years.map(y => <SelectItem key={y} value={y}>{y} Year</SelectItem>)}
+                    </SelectContent>
+                    </Select>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+            <FormField
+                control={form.control}
+                name="semester"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Semester</FormLabel>
+                    <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={!selectedYear}
+                    >
+                    <FormControl>
+                        <SelectTrigger>
+                        <SelectValue placeholder="Select semester" />
+                        </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        {availableSemesters.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                    </Select>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+            </div>
+        )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="year"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Year</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select year" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {years.map(y => <SelectItem key={y} value={y}>{y} Year</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="semester"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Semester</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                  disabled={!selectedYear}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select semester" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {availableSemesters.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
 
         <div className="flex justify-end gap-2 mt-4">
             <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>

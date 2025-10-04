@@ -205,7 +205,17 @@ export default function InventoryManagementPage() {
                      skippedCount++;
                      continue;
                  }
-                 const copies = row['Copies'] || row['copies'] || 0;
+                 const department = (row['Department'] || row['department']) || 'General';
+                 const year = (row['Year'] || row['year']) || '';
+                 const semester = (row['Semester'] || row['semester']) || '';
+                 
+                 if(department !== 'General' && (!year || !semester)) {
+                     skippedCount++;
+                     console.warn(`Skipping book "${bookTitle}" due to missing Year/Semester for non-General department.`);
+                     continue;
+                 }
+
+                 const copies = row['Copies'] || row['copies'] || 1;
                  const newBook: Omit<Book, 'id'> = {
                     title: bookTitle,
                     author: (row['Author'] || row['author']) || '',
@@ -213,7 +223,9 @@ export default function InventoryManagementPage() {
                     isbn: (row['ISBN'] || row['isbn']) || '',
                     category: (row['Category'] || row['category']) || '',
                     copies: `${copies}/${copies}`,
-                    department: (row['Department'] || row['department']) || '',
+                    department,
+                    year,
+                    semester,
                     status: 'available',
                     publicationDate: new Date().toISOString().split('T')[0],
                     coverImageUrl: `https://picsum.photos/seed/${row['ISBN'] || `new${importedCount}`}/300/400`,
@@ -224,7 +236,7 @@ export default function InventoryManagementPage() {
 
             toast({
                 title: "Import Successful",
-                description: `${importedCount} books imported. ${skippedCount > 0 ? `${skippedCount} rows skipped due to missing titles.` : ''}`,
+                description: `${importedCount} books imported. ${skippedCount > 0 ? `${skippedCount} rows skipped due to missing/invalid data.` : ''}`,
             });
         } catch (error) {
             console.error("Import error:", error);
@@ -243,7 +255,7 @@ export default function InventoryManagementPage() {
 
   const handleDownloadTemplate = () => {
     const templateData = [
-        {"Book Title": "", "Author": "", "Publication": "", "ISBN": "", "Category": "", "Copies": "", "Department": ""},
+        {"Book Title": "", "Author": "", "Publication": "", "ISBN": "", "Category": "", "Copies": "", "Department": "", "Year": "", "Semester": ""},
     ];
     const worksheet = XLSX.utils.json_to_sheet(templateData);
     const workbook = XLSX.utils.book_new();
@@ -383,7 +395,7 @@ export default function InventoryManagementPage() {
                         <div>
                             <h3 className="font-semibold mb-2">Template Format</h3>
                             <p className="text-sm text-muted-foreground mb-4">
-                                Your Excel file should have the following columns in this order.
+                                Your Excel file should have the following columns. Year & Semester are optional for 'General' department.
                             </p>
                             <div className="rounded-md border">
                                 <Table>
@@ -396,6 +408,8 @@ export default function InventoryManagementPage() {
                                             <TableHead>Category</TableHead>
                                             <TableHead>Copies</TableHead>
                                             <TableHead>Department</TableHead>
+                                            <TableHead>Year</TableHead>
+                                            <TableHead>Semester</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -406,7 +420,9 @@ export default function InventoryManagementPage() {
                                             <TableCell className="text-muted-foreground text-xs">e.g. 9780743273565</TableCell>
                                             <TableCell className="text-muted-foreground text-xs">e.g. Fiction</TableCell>
                                             <TableCell className="text-muted-foreground text-xs">e.g. 5</TableCell>
-                                            <TableCell className="text-muted-foreground text-xs">e.g. General</TableCell>
+                                            <TableCell className="text-muted-foreground text-xs">e.g. Computer Science</TableCell>
+                                            <TableCell className="text-muted-foreground text-xs">e.g. 1st</TableCell>
+                                            <TableCell className="text-muted-foreground text-xs">e.g. 1</TableCell>
                                         </TableRow>
                                     </TableBody>
                                 </Table>
