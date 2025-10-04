@@ -205,13 +205,14 @@ export default function InventoryManagementPage() {
                      skippedCount++;
                      continue;
                  }
+                 const copies = row['Copies'] || row['copies'] || 0;
                  const newBook: Omit<Book, 'id'> = {
                     title: bookTitle,
                     author: (row['Author'] || row['author']) || '',
                     publisher: (row['Publication'] || row['publisher']) || '',
                     isbn: (row['ISBN'] || row['isbn']) || '',
                     category: (row['Category'] || row['category']) || '',
-                    copies: String(row['Copies'] || row['copies'] || '0'),
+                    copies: `${copies}/${copies}`,
                     department: (row['Department'] || row['department']) || '',
                     status: 'available',
                     publicationDate: new Date().toISOString().split('T')[0],
@@ -404,7 +405,7 @@ export default function InventoryManagementPage() {
                                             <TableCell className="text-muted-foreground text-xs">e.g. Scribner</TableCell>
                                             <TableCell className="text-muted-foreground text-xs">e.g. 9780743273565</TableCell>
                                             <TableCell className="text-muted-foreground text-xs">e.g. Fiction</TableCell>
-                                            <TableCell className="text-muted-foreground text-xs">e.g. 5/5</TableCell>
+                                            <TableCell className="text-muted-foreground text-xs">e.g. 5</TableCell>
                                             <TableCell className="text-muted-foreground text-xs">e.g. General</TableCell>
                                         </TableRow>
                                     </TableBody>
@@ -641,6 +642,8 @@ export default function InventoryManagementPage() {
     </Card>
   );
 }
+
+    
 
     
 

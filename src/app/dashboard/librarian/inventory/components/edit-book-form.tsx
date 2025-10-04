@@ -68,7 +68,7 @@ export function EditBookForm({ book, onBookUpdated, setOpen }: EditBookFormProps
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
-  const [availableCopies, totalCopies] = book.copies ? book.copies.split('/').map(Number) : [0, 0];
+  const [availableCopies, totalCopies] = book.copies ? String(book.copies).split('/').map(Number) : [0, 0];
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -91,18 +91,12 @@ export function EditBookForm({ book, onBookUpdated, setOpen }: EditBookFormProps
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      const currentAvailable = isNaN(availableCopies) ? 0 : availableCopies;
       const newTotal = data.copies;
-
-      // Ensure available copies don't exceed new total.
-      // A more complex logic could be to adjust, but for now let's cap it.
-      const finalAvailable = Math.min(currentAvailable, newTotal);
-
       const updatedBook: Book = {
         ...book,
         ...data,
         semester: data.semester,
-        copies: `${finalAvailable}/${newTotal}`,
+        copies: `${newTotal}/${newTotal}`,
       };
 
       onBookUpdated(updatedBook);
@@ -313,3 +307,5 @@ export function EditBookForm({ book, onBookUpdated, setOpen }: EditBookFormProps
     </Form>
   );
 }
+
+    
